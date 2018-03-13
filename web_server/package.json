@@ -1,0 +1,15 @@
+{
+  "name": "ov_bicycles_web_server",
+  "version": "1.0.0",
+  "description": "Web server for web apps that show statistics and real-time availability of bicycles",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "dennis",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.16.2",
+    "pug": "^2.0.0-rc.4"
+  }
+}
