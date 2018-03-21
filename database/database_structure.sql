@@ -18,6 +18,14 @@ CREATE TABLE IF NOT EXISTS locker_set (
   CHECK (capacity >= 1)
 );
 
+CREATE TABLE IF NOT EXISTS coordinator (
+  id INT NOT NULL AUTO_INCREMENT,
+  socket_address CHAR(10) NOT NULL,
+  
+
+  PRIMARY KEY (id)
+);
+
 CREATE TABLE IF NOT EXISTS transaction (
   bicycle_id CHAR(10) NOT NULL,
   user_id INT NOT NULL,

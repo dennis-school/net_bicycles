@@ -7,32 +7,29 @@ import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketAddress;
-import java.util.ArrayList;
 
+import Package.PacketCoordinatorLife;
 
-/**
- * a thread periodically send live signal to other coordinators
- * tell the coordinator is alive
- * 
- * @author Luigi
- *
- */
+public class LifeChecker implements Runnable {
 
-public class StatusNotifier implements Runnable{
-	
 	private Coordinator coordinator;
+	private SocketAddress address;
 	private DatagramSocket socket;
-	private int lifetime;
 	
-	public StatusNotifier(Coordinator coordinator) {
+	private boolean isAlive;
+	private boolean active;
+	
+	public LifeChecker(SocketAddress address, Coordinator coordinator) {
 		this.coordinator = coordinator;
+		this.address = address;
 		this.socket = coordinator.getDatagramSocket();
-		this.lifetime = 0;
+		this.isAlive = false;
+		this.active = true;
 	}
-	
+
 	private DatagramPacket buildPacket(SocketAddress address) {
 		// maybe should add more information in packet?
-		PacketCoordinatorStatus packet = new PacketCoordinatorStatus( lifetime );
+		PacketCoordinatorLife packet = new PacketCoordinatorLife( );
 		
 		ByteArrayOutputStream byteStream = new ByteArrayOutputStream(4000);
         ObjectOutputStream outputStream;
@@ -51,34 +48,41 @@ public class StatusNotifier implements Runnable{
 		return new DatagramPacket(bytes, bytes.length, address);
 	}
 	
+	public void takeOverLockers( ) {
+		// first use address to find coordinator in database
+		// + tell database the death of coordinator
+		// second find lockers of that coordinator
+		// third send message to lockers to change coordinator
+	}
+	
+	public void alive() {
+		this.isAlive = true;
+	}
+	
 	@Override
 	public void run() {
-		// first get a list of coordinators from Database
-		// ex. socketAddress
-		ArrayList <SocketAddress> addresses = null;
 		
-		// second sort them due to server's physical address and choose five
-		
-
-		// send signal to those coordinators
-		for( SocketAddress address : addresses ) {
-			lifetime = lifetime + 1;
-			DatagramPacket packet = buildPacket( address );
+		while( this.active ) {
+			this.isAlive = false;
+			DatagramPacket packet = buildPacket( this.address );
 			try {
 				socket.send( packet );
-			} catch (IOException e) {
+				// server will handle response packet
+				
+				Thread.sleep( 5000 );
+			} catch (IOException | InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			}	
-		}
-		
-		// sleep some times
-		try {
-			Thread.sleep(10000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			}
+			
+			// if server didn't get response packet within 5s, we assume that coordinator die
+			if( !isAlive ) {
+				this.coordinator.removeCoordinator( this.address );
+				takeOverLockers( );
+				this.active = false;
+			}
 		}
 		
 	}
+
 }

@@ -7,8 +7,14 @@ import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketAddress;
+import java.util.HashMap;
 
-import net_bicycles_coordination_server.PacketTypes.PacketType;
+import Handler.PacketCoordinatorLifeHandler;
+import Handler.PacketCoordinatorResponseHandler;
+import Handler.PacketHandler;
+import Handler.PacketLockerTransHandler;
+import Package.Packet;
+import Package.PacketTypes.PacketType;
 
 /**
  * handle all kinds of packet from lockers and coordinators
@@ -23,9 +29,20 @@ public class CoordinatorServer implements Runnable {
 	private Coordinator coordinator;
 	private DatagramSocket socket;
 	
+	private HashMap<PacketType, PacketHandler> packetHandlers;
+	
 	public CoordinatorServer(Coordinator coordinator) {
 		this.coordinator = coordinator;
 		this.socket = coordinator.getDatagramSocket();
+		this.packetHandlers = new HashMap<PacketType, PacketHandler> ();
+		
+		buildPacketHandlers();
+	}
+
+	private void buildPacketHandlers() {
+		this.packetHandlers.put( PacketType.Packet_Coordinator_Life, new PacketCoordinatorLifeHandler(this.socket) );
+		this.packetHandlers.put(PacketType.Packet_Coordinator_Response, new PacketCoordinatorResponseHandler(this.coordinator) );
+		this.packetHandlers.put( PacketType.Packet_Locker_Transection, new PacketLockerTransHandler(this.coordinator) );
 	}
 
 	// handle a unknown type package
@@ -34,49 +51,34 @@ public class CoordinatorServer implements Runnable {
 		
 		DatagramPacket packetDatagram = new DatagramPacket(buf, buf.length);
 		socket.receive(packetDatagram);
-		
+
+        SocketAddress address = packetDatagram.getSocketAddress();
         
         ByteArrayInputStream byteStream = new ByteArrayInputStream(buf);
         ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(byteStream));
         Packet packet = (Packet)ois.readObject();
         
         PacketType packetType = packet.getPacketType();
-        SocketAddress address = packetDatagram.getSocketAddress();
         
-        if( packetType == PacketType.Packet_CoordinatorStatus ) {
-        	handleLifeSignal( (PacketCoordinatorStatus) packet, address );
-        }else if( packetType == PacketType.Packet_LockerStatus ) {
-        	handleLockerInfo();
-        }
-        
+        PacketHandler packetHandler = packetHandlers.get( packetType );
+        packetHandler.handlePacket( packet, address );
 	}
-	
-	
-	// handle the package from other coordinators
-	private void handleLifeSignal( PacketCoordinatorStatus packet, SocketAddress address ) {
-		int id = packet.getId();
-		coordinator.checkLifeStatus( address, id );
-		
-	}
-	
-	// handle the information package form lockers
-	private void handleLockerInfo() {
-        // find id of locker in database by using socketAddress ?
-	}
-	
 	
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
 		
-		try {
-			handlePacket();
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		while( true ) {
+
+			try {
+				handlePacket();
+			} catch (ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		
 	}

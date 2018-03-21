@@ -17,28 +17,63 @@ import java.util.HashMap;
 
 public class Coordinator {
 
-	private DatagramSocket socket;
-	private InetAddress localAddress;
-	private int localPort;
+	// id of Coordinator in Database
+	private int id;
 	
-	private ArrayList<SocketAddress> lockersAddress; //why we need this?
-
-	private HashMap<SocketAddress, Coordinator > coordinatorsStatus;
+	private DatagramSocket socket;
+	private InetAddress address;
+	private int port;
+	
+	private ArrayList<SocketAddress> lockers;
+	private ArrayList<SocketAddress> coordinators;
+	private HashMap<SocketAddress, LifeChecker> lifeCheckers;
 	
 	// use for store and extract info from net_bicycle Database
 	private Database database;
 	
 	public static void main( String... args ) throws UnknownHostException {
-		Coordinator coordinator = new Coordinator();
-		coordinator.createUDPSocket();
+		Coordinator coordinator = new Coordinator(1);
 		coordinator.start();
 	}
 	
-	public Coordinator() {
-		
+	public Coordinator(int id) {
+		this.id = id;
+		this.database = new Database();
+		this.lockers = database.getLockers( id );
+		this.coordinators = database.getCoordinators( id );
+		this.lifeCheckers = new HashMap<SocketAddress, LifeChecker>();
+
+		createUDPSocket( id );
+		createLifeChecker();
+	}
+
+	// check life status for surrounding coordinators
+	private void createLifeChecker() {
+		for( SocketAddress address:coordinators ) {
+			LifeChecker checker = new LifeChecker( address, this );
+			lifeCheckers.put( address, checker);
+			Thread t = new Thread( checker );
+			t.start();
+		}
+	}
+
+	public synchronized void removeCoordinator( SocketAddress address ) {
+		this.coordinators.remove( address );
 	}
 	
-	private void createUDPSocket() {
+	public synchronized void addLockers( SocketAddress address ) {
+		this.lockers.add( address );
+	}
+	
+	private void createUDPSocket(int id) {
+		this.port = 5555;
+		try {
+			this.socket = new DatagramSocket( port );
+		} catch (SocketException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		/*
 		try {
 			this.socket = new DatagramSocket();
 			this.localAddress = socket.getLocalAddress();
@@ -47,17 +82,13 @@ public class Coordinator {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		*/
 	}
 	
 	private void start() {
-		StatusNotifier notifier = new StatusNotifier( this );
 		CoordinatorServer server = new CoordinatorServer( this );
-		
-		Thread t1 = new Thread( notifier );
-		Thread t2 = new Thread( server );
-		
-		t1.start();
-		t2.start();
+		Thread t = new Thread( server );
+		t.start();
 	}
 	
 	public DatagramSocket getDatagramSocket() {
@@ -65,34 +96,20 @@ public class Coordinator {
 	}
 	
 	public InetAddress getInetAddress() {
-		return this.localAddress;
+		return this.address;
 	}
 	
 	public int getPort() {
-		return this.localPort;
+		return this.port;
 	}
 	
-	public void lockerJoin( SocketAddress newLocker ) {
-		lockersAddress.add( newLocker );
+	public LifeChecker getLifeChecker( SocketAddress address ) {
+		return this.lifeCheckers.get(address);
 	}
 	
 	public void insertBicycleTransection() {
 		
 	}
 	
-	public void takeOverLockers( SocketAddress address ) {
-		// first use address to find coordinator in database
-		// + tell database the death of coordinator
-		// second find lockers of that coordinator
-		// third send message to lockers to change coordinator
-	}
-
-	public void checkLifeStatus(SocketAddress address, int id) {
-		// check whether the coordinator is work
-		if( coordinatorsStatus.containsValue(address) ) {
-			takeOverLockers( address );
-		}
-		
-	}
 }
 
