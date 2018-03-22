@@ -1,11 +1,10 @@
 package Handler;
 
+import java.io.ByteArrayInputStream;
 import java.net.SocketAddress;
-
-import Package.Packet;
 
 public interface PacketHandler {
 	
-	public void handlePacket( Packet p, SocketAddress address );
+	public void handlePacket( ByteArrayInputStream bais, SocketAddress address );
 
 }

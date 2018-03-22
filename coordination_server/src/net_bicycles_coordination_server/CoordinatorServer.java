@@ -1,9 +1,7 @@
 package net_bicycles_coordination_server;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketAddress;
@@ -13,8 +11,7 @@ import Handler.PacketCoordinatorLifeHandler;
 import Handler.PacketCoordinatorResponseHandler;
 import Handler.PacketHandler;
 import Handler.PacketLockerTransHandler;
-import Package.Packet;
-import Package.PacketTypes.PacketType;
+import Packet.PacketType;
 
 /**
  * handle all kinds of packet from lockers and coordinators
@@ -29,20 +26,20 @@ public class CoordinatorServer implements Runnable {
 	private Coordinator coordinator;
 	private DatagramSocket socket;
 	
-	private HashMap<PacketType, PacketHandler> packetHandlers;
+	private HashMap<Integer, PacketHandler> packetHandlers;
 	
 	public CoordinatorServer(Coordinator coordinator) {
 		this.coordinator = coordinator;
 		this.socket = coordinator.getDatagramSocket();
-		this.packetHandlers = new HashMap<PacketType, PacketHandler> ();
+		this.packetHandlers = new HashMap<Integer, PacketHandler> ();
 		
 		buildPacketHandlers();
 	}
 
 	private void buildPacketHandlers() {
-		this.packetHandlers.put( PacketType.Packet_Coordinator_Life, new PacketCoordinatorLifeHandler(this.socket) );
-		this.packetHandlers.put(PacketType.Packet_Coordinator_Response, new PacketCoordinatorResponseHandler(this.coordinator) );
-		this.packetHandlers.put( PacketType.Packet_Locker_Transection, new PacketLockerTransHandler(this.coordinator) );
+		this.packetHandlers.put( PacketType.PACKET_COORDINATOR_LIFE.id, new PacketCoordinatorLifeHandler(this.socket) );
+		this.packetHandlers.put(PacketType.Packet_COORDINATOR_RESPONSE.id, new PacketCoordinatorResponseHandler(this.coordinator) );
+		this.packetHandlers.put( PacketType.Packet_LOCKER_TRANSECTION.id, new PacketLockerTransHandler(this.coordinator) );
 	}
 
 	// handle a unknown type package
@@ -54,14 +51,12 @@ public class CoordinatorServer implements Runnable {
 
         SocketAddress address = packetDatagram.getSocketAddress();
         
-        ByteArrayInputStream byteStream = new ByteArrayInputStream(buf);
-        ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(byteStream));
-        Packet packet = (Packet)ois.readObject();
+        ByteArrayInputStream bais = new ByteArrayInputStream(buf);
         
-        PacketType packetType = packet.getPacketType();
+        int type = bais.read();
         
-        PacketHandler packetHandler = packetHandlers.get( packetType );
-        packetHandler.handlePacket( packet, address );
+        PacketHandler packetHandler = packetHandlers.get( type );
+        packetHandler.handlePacket( bais, address );
 	}
 	
 	@Override
@@ -79,6 +74,7 @@ public class CoordinatorServer implements Runnable {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			
 		}
 		
 	}

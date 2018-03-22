@@ -1,12 +1,13 @@
 package net_bicycles_coordination_server;
 
 import java.net.DatagramSocket;
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import Database.Database;
 
 /**
  * Handle locker's and coordinator's package
@@ -21,19 +22,24 @@ public class Coordinator {
 	private int id;
 	
 	private DatagramSocket socket;
-	private InetAddress address;
-	private int port;
+	private SocketAddress address;
 	
 	private ArrayList<SocketAddress> lockers;
 	private ArrayList<SocketAddress> coordinators;
 	private HashMap<SocketAddress, LifeChecker> lifeCheckers;
 	
+	CoordinatorServer server;
+	
 	// use for store and extract info from net_bicycle Database
 	private Database database;
 	
-	public static void main( String... args ) throws UnknownHostException {
-		Coordinator coordinator = new Coordinator(1);
-		coordinator.start();
+	public Coordinator() {
+		try {
+			this.socket = new DatagramSocket();
+		} catch (SocketException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	public Coordinator(int id) {
@@ -42,8 +48,10 @@ public class Coordinator {
 		this.lockers = database.getLockers( id );
 		this.coordinators = database.getCoordinators( id );
 		this.lifeCheckers = new HashMap<SocketAddress, LifeChecker>();
-
 		createUDPSocket( id );
+		this.server = new CoordinatorServer( this );
+		Thread t = new Thread( server );
+		t.start();
 		createLifeChecker();
 	}
 
@@ -66,9 +74,9 @@ public class Coordinator {
 	}
 	
 	private void createUDPSocket(int id) {
-		this.port = 5555;
+		this.address = new InetSocketAddress( database.getCoordinatorAddress(id), database.getCoordiantorPort(id) );
 		try {
-			this.socket = new DatagramSocket( port );
+			this.socket = new DatagramSocket( address );
 		} catch (SocketException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -85,22 +93,12 @@ public class Coordinator {
 		*/
 	}
 	
-	private void start() {
-		CoordinatorServer server = new CoordinatorServer( this );
-		Thread t = new Thread( server );
-		t.start();
-	}
-	
 	public DatagramSocket getDatagramSocket() {
 		return this.socket;
 	}
 	
-	public InetAddress getInetAddress() {
+	public SocketAddress getSocketAddress() {
 		return this.address;
-	}
-	
-	public int getPort() {
-		return this.port;
 	}
 	
 	public LifeChecker getLifeChecker( SocketAddress address ) {
@@ -108,7 +106,7 @@ public class Coordinator {
 	}
 	
 	public void insertBicycleTransection() {
-		
+		this.database.insertBicycleTransection();
 	}
 	
 }

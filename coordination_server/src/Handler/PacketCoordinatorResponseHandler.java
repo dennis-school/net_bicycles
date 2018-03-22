@@ -1,8 +1,8 @@
 package Handler;
 
+import java.io.ByteArrayInputStream;
 import java.net.SocketAddress;
 
-import Package.Packet;
 import net_bicycles_coordination_server.*;
 
 public class PacketCoordinatorResponseHandler implements PacketHandler {
@@ -14,7 +14,7 @@ public class PacketCoordinatorResponseHandler implements PacketHandler {
 	}
 	
 	@Override
-	public void handlePacket(Packet p, SocketAddress address) {
+	public void handlePacket(ByteArrayInputStream bais, SocketAddress address) {
 		LifeChecker checker = this.coordinator.getLifeChecker( address );
 		checker.alive();
 	}

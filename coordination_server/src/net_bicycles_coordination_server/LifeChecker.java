@@ -1,51 +1,34 @@
 package net_bicycles_coordination_server;
 
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
+import java.awt.event.ActionListener;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketAddress;
+import javax.swing.Timer;
 
-import Package.PacketCoordinatorLife;
+import Packet.PacketCoordinatorLife;
 
 public class LifeChecker implements Runnable {
-
 	private Coordinator coordinator;
-	private SocketAddress address;
+	private SocketAddress socketAddress;
 	private DatagramSocket socket;
 	
-	private boolean isAlive;
-	private boolean active;
+	private ActionListener aliveTimerListener;
+	private Timer aliveTimer;
 	
-	public LifeChecker(SocketAddress address, Coordinator coordinator) {
+	public LifeChecker(SocketAddress socketAddress, Coordinator coordinator) {
 		this.coordinator = coordinator;
-		this.address = address;
+		this.socketAddress = socketAddress;
 		this.socket = coordinator.getDatagramSocket();
-		this.isAlive = false;
-		this.active = true;
-	}
-
-	private DatagramPacket buildPacket(SocketAddress address) {
-		// maybe should add more information in packet?
-		PacketCoordinatorLife packet = new PacketCoordinatorLife( );
-		
-		ByteArrayOutputStream byteStream = new ByteArrayOutputStream(4000);
-        ObjectOutputStream outputStream;
-		try {
-			outputStream = new ObjectOutputStream(new BufferedOutputStream(byteStream));
-	        outputStream.flush();
-	        outputStream.writeObject(packet);
-	        outputStream.flush();
-	        outputStream.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-        byte[] bytes =  byteStream.toByteArray();
-        
-		return new DatagramPacket(bytes, bytes.length, address);
+		this.aliveTimerListener = ( ev -> {
+			System.out.println( "No! I'm dead!" );
+			this.aliveTimer.stop();
+			//this.coordinator.removeCoordinator( port );
+			takeOverLockers( );
+		} );
+		this.aliveTimer = new Timer( 5000, aliveTimerListener );
+		this.aliveTimer.start();
 	}
 	
 	public void takeOverLockers( ) {
@@ -55,32 +38,32 @@ public class LifeChecker implements Runnable {
 		// third send message to lockers to change coordinator
 	}
 	
-	public void alive() {
-		this.isAlive = true;
+
+
+	private DatagramPacket buildPacket( ) {
+		PacketCoordinatorLife packet = new PacketCoordinatorLife();
+		byte[] fullPacket = packet.toBinary();
+		return new DatagramPacket(fullPacket, fullPacket.length, this.socketAddress );
 	}
 	
+	// Notify that it is alive
+	public void alive() {
+		this.aliveTimer.restart( );
+	}
+
 	@Override
 	public void run() {
-		
-		while( this.active ) {
-			this.isAlive = false;
-			DatagramPacket packet = buildPacket( this.address );
+		while( this.aliveTimer.isRunning( )  ) {
+			
+			DatagramPacket packet = buildPacket( );
 			try {
 				socket.send( packet );
-				// server will handle response packet
-				
-				Thread.sleep( 5000 );
+				System.out.println( socket.getLocalPort() + ": Hi " + packet.getSocketAddress() + ", are you alive?" );
+				Thread.sleep( 1000 );
 			} catch (IOException | InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			
-			// if server didn't get response packet within 5s, we assume that coordinator die
-			if( !isAlive ) {
-				this.coordinator.removeCoordinator( this.address );
-				takeOverLockers( );
-				this.active = false;
-			}
 		}
 		
 	}
