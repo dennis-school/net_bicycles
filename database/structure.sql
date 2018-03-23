@@ -8,22 +8,26 @@ CREATE TABLE IF NOT EXISTS bicycle (
 CREATE TABLE IF NOT EXISTS locker_set (
   id INT NOT NULL AUTO_INCREMENT,
   name VARCHAR(128) NOT NULL,
-  location_longitude INT NOT NULL,
-  location_latitude INT NOT NULL,
+  location_longitude REAL NOT NULL,
+  location_latitude REAL NOT NULL,
   capacity INT NOT NULL,
+  ip VARCHAR(39) NOT NULL,
+  port INT NOT NULL,
 
   PRIMARY KEY (id),
   CONSTRAINT UC_name UNIQUE(name),
   CONSTRAINT UC_location UNIQUE(location_longitude,location_latitude),
+  CONSTRAINT UC_address UNIQUE(ip,port),
   CHECK (capacity >= 1)
 );
 
 CREATE TABLE IF NOT EXISTS coordinator (
   id INT NOT NULL AUTO_INCREMENT,
-  socket_address CHAR(10) NOT NULL,
-  
+  ip VARCHAR(39) NOT NULL,
+  port INT NOT NULL,
 
-  PRIMARY KEY (id)
+  PRIMARY KEY (id),
+  CONSTRAINT UC_address UNIQUE(ip,port)
 );
 
 CREATE TABLE IF NOT EXISTS transaction (
@@ -37,6 +41,15 @@ CREATE TABLE IF NOT EXISTS transaction (
   PRIMARY KEY (bicycle_id,taken_timestamp),
   CHECK (returned_timestamp IS NULL OR returned_timestamp > taken_timestamp),
   CHECK (returned_locker IS NULL = returned_timestamp IS NULL)
+);
+
+CREATE TABLE IF NOT EXISTS statistics (
+  id INT NOT NULL AUTO_INCREMENT,
+  timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  value REAL NOT NULL,
+
+  PRIMARY KEY (id),
+  CONSTRAINT UC_time UNIQUE(timestamp)
 );
 
 ALTER TABLE bicycle

@@ -4,12 +4,27 @@
   "description": "Web server for web apps that show statistics and real-time availability of bicycles",
   "main": "index.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "user_client": "webpack --watch",
+    "server": "nodemon --exec \"node_modules/.bin/ts-node\" -- \"src/server/index.ts\""
   },
   "author": "dennis",
   "license": "ISC",
   "dependencies": {
+    "@types/googlemaps": "^3.30.8",
+    "@types/mysql": "^2.15.4",
+    "@types/node": "^9.6.0",
+    "awesome-typescript-loader": "^4.0.1",
     "express": "^4.16.2",
-    "pug": "^2.0.0-rc.4"
+    "mysql": "^2.15.0",
+    "pug": "^2.0.0-rc.4",
+    "ts-loader": "^4.1.0",
+    "ts-node": "^5.0.1",
+    "typescript": "^2.7.2",
+    "webpack": "^4.2.0",
+    "webpack-cli": "^2.0.13"
+  },
+  "devDependencies": {
+    "nodemon": "^1.17.2"
   }
 }
