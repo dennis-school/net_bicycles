@@ -4,6 +4,8 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -42,7 +44,7 @@ public class Coordinator {
 		}
 	}
 	
-	public Coordinator(int id) {
+	public Coordinator(int id) throws UnknownHostException, SQLException {
 		this.id = id;
 		this.database = new Database();
 		this.lockers = database.getLockers( id );
@@ -73,7 +75,7 @@ public class Coordinator {
 		this.lockers.add( address );
 	}
 	
-	private void createUDPSocket(int id) {
+	private void createUDPSocket(int id) throws UnknownHostException, SQLException {
 		this.address = new InetSocketAddress( database.getCoordinatorAddress(id), database.getCoordiantorPort(id) );
 		try {
 			this.socket = new DatagramSocket( address );
@@ -105,7 +107,7 @@ public class Coordinator {
 		return this.lifeCheckers.get(address);
 	}
 	
-	public void insertBicycleTransection() {
+	public void insertBicycleTransection() throws SQLException {
 		this.database.insertBicycleTransection();
 	}
 	
