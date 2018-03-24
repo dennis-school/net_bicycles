@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS locker_set (
   capacity INT NOT NULL,
   ip VARCHAR(39) NOT NULL,
   port INT NOT NULL,
+  coordinator_id INT,
 
   PRIMARY KEY (id),
   CONSTRAINT UC_name UNIQUE(name),
@@ -54,6 +55,9 @@ CREATE TABLE IF NOT EXISTS statistics (
 
 ALTER TABLE bicycle
 ADD FOREIGN KEY (current_locker) REFERENCES locker_set(id);
+
+ALTER TABLE locker_set
+ADD FOREIGN KEY (coordinator_id) REFERENCES coordinator(id);
 
 ALTER TABLE transaction
 ADD FOREIGN KEY(bicycle_id) REFERENCES bicycle(id);
