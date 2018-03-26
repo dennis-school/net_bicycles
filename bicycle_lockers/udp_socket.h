@@ -9,9 +9,10 @@
 class UDPSocket {
 public:
   UDPSocket( );
+  UDPSocket(const char *port);
   ~UDPSocket( );
   int port( ) const;
-  //void write( const std::vector< unsigned char >& data, struct sockaddr packetDst );
+  int write( std::vector< unsigned char >& data, struct sockaddr dstPacketDest );
   
   // Make sure the 'data' buffer is big enough
   int read( std::vector< unsigned char >& data, struct sockaddr &dstPacketSrc );
