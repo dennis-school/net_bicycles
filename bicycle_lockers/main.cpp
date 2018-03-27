@@ -9,28 +9,6 @@ int *bicycles;
 int port;
 UDPSocket lockerSocket;
 
-void sendPacket(int locker, int bicycleID) {
-  bool received = false;
-  while(!received) {
-    try { 
-      struct sockaddr src;
-      std::stringstream ss;
-      std::string dataString;
-      int packetID = rand() % 8999 + 1000;
-      ss << packetID << " " << locker << " " << bicycleID;
-      dataString = ss.str();
-      std::cout << "Sending: " << dataString;
-      std::vector< unsigned char > data(dataString.begin(), dataString.end());
-      std::cout << "  To: " << lockerSocket.port( ) << std::endl;
-      int numWrite = lockerSocket.write( data, src );
-      std::cout << "Wrote " << numWrite << " bytes" << std::endl;
-    } catch ( std::exception& ex ) {
-      std::cout << "Failed" << std::endl;
-    }
-    received = receivePacket(packetID);
-  return;
-}
-
 bool receivePacket(int packetID) {
   try {
     std::cout << "Running: " << lockerSocket.port( ) << std::endl;
@@ -50,6 +28,29 @@ bool receivePacket(int packetID) {
     return false;
   }
 
+}
+
+void sendPacket(int locker, int bicycleID) {
+  bool received = false;
+  while(!received) {
+    try { 
+      struct sockaddr src;
+      std::stringstream ss;
+      std::string dataString;
+      int packetID = rand() % 8999 + 1000;
+      ss << packetID << " " << locker << " " << bicycleID;
+      dataString = ss.str();
+      std::cout << "Sending: " << dataString;
+      std::vector< unsigned char > data(dataString.begin(), dataString.end());
+      std::cout << "  To: " << lockerSocket.port( ) << std::endl;
+      int numWrite = lockerSocket.write( data, src );
+      std::cout << "Wrote " << numWrite << " bytes" << std::endl;
+      received = receivePacket(packetID);
+    } catch ( std::exception& ex ) {
+      std::cout << "Failed" << std::endl;
+    }
+  }
+  return;
 }
 
 
@@ -157,7 +158,7 @@ int main( int argc, char **argv ) {
         break;
 
       case 4:
-        receivePacket();
+        receivePacket(1000);
         break;
 
       default:
