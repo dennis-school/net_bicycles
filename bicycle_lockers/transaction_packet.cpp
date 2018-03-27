@@ -8,10 +8,10 @@
 
 
 typedef struct transactionPacket {
-	uint_8 packetID; //randomly generated ID for checking successful transmassion
-	uint_8 type; //0 if bicycle removed / 1 if bicycle returned
+	uint16_t packetID; //randomly generated ID for checking successful transmassion
+	uint8_t type; //0 if bicycle removed / 1 if bicycle returned
 	char bicycleID[10]; //ID for bicycle used in transaction
-	uint_16 userID; //ID of user involved in transaction
+	uint32_t userID; //ID of user involved in transaction
 } transactionPacket;
 
 
@@ -28,9 +28,9 @@ int main() {
 	std::cout << test <<std::endl;
 	struct transactionPacket *pack;
 	pack = (transactionPacket*) test;
-	pack->packetID = 4345;
-	pack->type = 0;
-	pack->userID = 34343434;
-	std::cout << itoa(pack->packetID) << " " << itoa(pack->type) << " " << pack->bicycleID << " " << itoa(pack->userID) << std::endl;
+	pack->packetID = (unsigned) 4345;
+	pack->type = 1;
+	pack->userID = (unsigned) 343434;
+	std::cout << pack->packetID << " " << pack->type << " " << pack->userID << std::endl;
 	return 1;
 }
