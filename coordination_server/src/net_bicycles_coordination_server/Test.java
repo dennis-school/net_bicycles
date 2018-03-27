@@ -27,8 +27,10 @@ public class Test {
 	
 	public static void main( String... args ) throws IOException {
 		init();
-		testSend();
-		testReceive();
+		//testSend();
+		//testReceive();
+		
+		//System.out.println( InetAddress.getByName("localhost") );
 		
 	}
 	

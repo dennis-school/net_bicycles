@@ -7,7 +7,7 @@ import java.net.DatagramSocket;
 import java.net.SocketAddress;
 import javax.swing.Timer;
 
-import Packet.PacketCoordinatorLife;
+import Packet.PacketLifeCheck;
 
 public class LifeChecker implements Runnable {
 	private Coordinator coordinator;
@@ -32,17 +32,14 @@ public class LifeChecker implements Runnable {
 	}
 	
 	public void takeOverLockers( ) {
-		// first use address to find coordinator in database
-		// + tell database the death of coordinator
-		// second find lockers of that coordinator
-		// third send message to lockers to change coordinator
+		this.coordinator.takeLockers( socketAddress );
 	}
 	
 
 
 	private DatagramPacket buildPacket( ) {
-		PacketCoordinatorLife packet = new PacketCoordinatorLife();
-		byte[] fullPacket = packet.toBinary();
+		PacketLifeCheck packet = new PacketLifeCheck();
+		byte[] fullPacket = packet.toBinary( coordinator.getId() );
 		return new DatagramPacket(fullPacket, fullPacket.length, this.socketAddress );
 	}
 	
@@ -53,12 +50,12 @@ public class LifeChecker implements Runnable {
 
 	@Override
 	public void run() {
+		DatagramPacket packet = buildPacket( );
 		while( this.aliveTimer.isRunning( )  ) {
 			
-			DatagramPacket packet = buildPacket( );
 			try {
 				socket.send( packet );
-				System.out.println( socket.getLocalPort() + ": Hi " + packet.getSocketAddress() + ", are you alive?" );
+				System.out.println( socket.getLocalPort() + ": check " + packet.getSocketAddress() );
 				Thread.sleep( 1000 );
 			} catch (IOException | InterruptedException e) {
 				e.printStackTrace();

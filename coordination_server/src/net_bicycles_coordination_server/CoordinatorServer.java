@@ -7,15 +7,11 @@ import java.net.DatagramSocket;
 import java.net.SocketAddress;
 import java.util.HashMap;
 
-import Handler.PacketCoordinatorLifeHandler;
-import Handler.PacketCoordinatorResponseHandler;
-import Handler.PacketHandler;
-import Handler.PacketLockerTransHandler;
-import Packet.PacketType;
+import Handler.*;
+import Packet.*;
 
 /**
  * handle all kinds of packet from lockers and coordinators
- * send change-coordinator-packet to notify locker ?
  * 
  * @author Luigi
  *
@@ -37,9 +33,12 @@ public class CoordinatorServer implements Runnable {
 	}
 
 	private void buildPacketHandlers() {
-		this.packetHandlers.put( PacketType.PACKET_COORDINATOR_LIFE.id, new PacketCoordinatorLifeHandler(this.socket) );
-		this.packetHandlers.put(PacketType.Packet_COORDINATOR_RESPONSE.id, new PacketCoordinatorResponseHandler(this.coordinator) );
-		this.packetHandlers.put( PacketType.Packet_LOCKER_TRANSECTION.id, new PacketLockerTransHandler(this.coordinator) );
+		this.packetHandlers.put( PacketType.PACKET_LIFE_CHECK.id, new PacketLifeCheckHandler(this.coordinator) );
+		this.packetHandlers.put( PacketType.Packet_RESPONSE.id, new PacketResponseHandler(this.coordinator) );
+		this.packetHandlers.put( PacketType.Packet_BICYCLE_TRANSECTION.id, new PacketLockerTransHandler(this.coordinator) );
+		this.packetHandlers.put( PacketType.Packet_CONNECTION_REQUEST.id, new PacketConnectionRequestHandler(this.coordinator) );
+		this.packetHandlers.put( PacketType.Packet_CONNECTION_ACCEPT.id, new PacketConnectionAcceptHandler(this.coordinator) );
+		this.packetHandlers.put( PacketType.Packet_CONNECTION_REJICT.id, new PacketConnectionRejectHandler(this.coordinator) );
 	}
 
 	// handle a unknown type package
@@ -54,9 +53,10 @@ public class CoordinatorServer implements Runnable {
         ByteArrayInputStream bais = new ByteArrayInputStream(buf);
         
         int type = bais.read();
+        int packet_id = bais.read();
         
         PacketHandler packetHandler = packetHandlers.get( type );
-        packetHandler.handlePacket( bais, address );
+        packetHandler.handlePacket( bais, address, packet_id );
 	}
 	
 	@Override
