@@ -21,8 +21,13 @@ bool receivePacket(int packetID) {
     std::cout << "Message: " << dataStr << std::endl;
     int receivedID;
     sscanf(dataStr.c_str(), "%d", &receivedID);
-    bool result = (receivedID==packetID ? true : false);
-    return result;
+    if(receivedID==packetID) {
+      std::cout << "Transaction confirmed!" << std::endl;
+      return true;
+    } else {
+      std::cout << "Transaction failed, retrying." << std::endl;
+      return false;
+    }
   } catch ( std::exception& ex ) {
     std::cout << "Failed" << std::endl;
     return false;
