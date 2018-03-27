@@ -88,10 +88,10 @@ int UDPSocket::read( std::vector< unsigned char >& data, struct sockaddr &dstPac
   return numRead;
 }
 
-int UDPSocket::write( std::vector< unsigned char >& data, struct sockaddr &dstPacketDest ) {
+int UDPSocket::write( std::vector< unsigned char >& data, struct sockaddr_in &dstPacketDest ) {
   socklen_t addrlen = sizeof( struct sockaddr_in );
   struct sockaddr_in sin;
-  sin.sin_addr.s_addr = inet_addr("172.0.0.1");
+  sin.sin_addr.s_addr = inet_addr("127.0.0.1");
   sin.sin_family = AF_INET;
   sin.sin_port = htons(37777);
   int numWrite = sendto( m_fd, &data[0], data.size(), 0, (struct sockaddr *) &sin, addrlen);

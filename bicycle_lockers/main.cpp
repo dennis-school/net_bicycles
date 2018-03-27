@@ -1,12 +1,14 @@
 #include <iostream>
 #include <cstdlib>
 #include <stdio.h>
+#include <arpa/inet.h>
 #include <sstream>
 #include "udp_socket.h"
 
 int capacity;
 int *bicycles;
 int port;
+int destPort = 37777;
 UDPSocket lockerSocket;
 
 bool receivePacket(int packetID) {
@@ -39,7 +41,8 @@ void sendPacket(int locker, int bicycleID) {
   bool received = false;
   while(!received) {
     try { 
-      struct sockaddr src;
+      struct sockaddr_in dest;
+      dest.sin_port = htons(destPort);
       std::stringstream ss;
       std::string dataString;
       int packetID = rand() % 8999 + 1000;
@@ -48,7 +51,7 @@ void sendPacket(int locker, int bicycleID) {
       std::cout << "Sending: " << dataString;
       std::vector< unsigned char > data(dataString.begin(), dataString.end());
       std::cout << "  To: " << lockerSocket.port( ) << std::endl;
-      int numWrite = lockerSocket.write( data, src );
+      int numWrite = lockerSocket.write(data, dest);
       std::cout << "Wrote " << numWrite << " bytes" << std::endl;
       received = receivePacket(packetID);
     } catch ( std::exception& ex ) {

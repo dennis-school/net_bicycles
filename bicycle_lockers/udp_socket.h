@@ -12,7 +12,7 @@ public:
   UDPSocket(const char *port);
   ~UDPSocket( );
   int port( ) const;
-  int write( std::vector< unsigned char >& data, struct sockaddr &dstPacketDest );
+  int write( std::vector< unsigned char >& data, struct sockaddr_in &dstPacketDest );
   
   // Make sure the 'data' buffer is big enough
   int read( std::vector< unsigned char >& data, struct sockaddr &dstPacketSrc );
