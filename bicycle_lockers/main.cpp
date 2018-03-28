@@ -209,10 +209,6 @@ int main( int argc, char **argv ) {
         removeBicycle(locker, userID);
         break;
 
-      case 4:
-        //receivePacket(1000);
-        break;
-
       default:
         std::cout << "Error: Incorrect Format." << std::endl;
         break;
