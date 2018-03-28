@@ -1,8 +1,8 @@
 import socket
 
 UDP_IP = "127.0.0.1"
-UDP_PORT = 37777 # Change this for the particular server port
-MESSAGE = "Hello, World!"
+UDP_PORT = 37778 # Change this for the particular server port
+MESSAGE = "1000"
 
 print("UDP target IP:", UDP_IP)
 print("UDP target port:", UDP_PORT)
