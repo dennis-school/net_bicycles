@@ -1,17 +1,20 @@
 #include <iostream>
 #include <cstdlib>
+#include <cstring>
 #include <stdio.h>
 #include <arpa/inet.h>
 #include <sstream>
+#include <string.h>
 #include "udp_socket.h"
+#include "transaction_packet.h"
 
 int capacity;
 int *bicycles;
 int port;
-int destPort = 37777;
+int coordinatorPort = 37777;
 UDPSocket lockerSocket;
 
-bool receivePacket(int packetID) {
+bool receivePacket(std::string type, int packetID) {
   try {
     std::cout << "Running: " << lockerSocket.port( ) << std::endl;
     struct sockaddr src;
@@ -24,10 +27,10 @@ bool receivePacket(int packetID) {
     int receivedID;
     sscanf(dataStr.c_str(), "%d", &receivedID);
     if(receivedID==packetID) {
-      std::cout << "Transaction confirmed!" << std::endl;
+      std::cout << type << " confirmed!" << std::endl;
       return true;
     } else {
-      std::cout << "Transaction failed, retrying." << std::endl;
+      std::cout << type << " failed, retrying." << std::endl;
       return false;
     }
   } catch ( std::exception& ex ) {
@@ -37,28 +40,60 @@ bool receivePacket(int packetID) {
 
 }
 
-void sendPacket(int locker, int bicycleID) {
+void sendPacket(char type, int bicycleID, int userID) {
   bool received = false;
   while(!received) {
-    try { 
-      struct sockaddr_in dest;
-      dest.sin_port = htons(destPort);
+    try {
       std::stringstream ss;
-      std::string dataString;
-      int packetID = rand() % 8999 + 1000;
-      ss << packetID << " " << locker << " " << bicycleID;
-      dataString = ss.str();
-      std::cout << "Sending: " << dataString;
-      std::vector< unsigned char > data(dataString.begin(), dataString.end());
-      std::cout << "  To: " << lockerSocket.port( ) << std::endl;
+      struct sockaddr_in dest;
+      dest.sin_port = htons(coordinatorPort);
+      short packetID = rand() % 8999 + 1000;
+
+      transactionPacket tp;
+      tp.packetID = packetID;
+      tp.type = (unsigned) type;
+      ss << bicycleID;
+      strcpy(tp.bicycleID, ss.str().c_str());
+      tp.userID = userID;
+      std::cout << tp.packetID << " " << tp.type << " " << tp.bicycleID << " " << tp.userID << std::endl;
+      
+      std::vector<unsigned char> data(sizeof(tp));
+      std::memcpy(data.data(), &tp, sizeof(tp));
+      ss << packetID << " " << " " << bicycleID;
+      std::cout << "Sending To: " << lockerSocket.port( ) << std::endl;
       int numWrite = lockerSocket.write(data, dest);
       std::cout << "Wrote " << numWrite << " bytes" << std::endl;
-      received = receivePacket(packetID);
+      std::string type = "Transaction";
+      received = receivePacket(type, packetID);
     } catch ( std::exception& ex ) {
       std::cout << "Failed" << std::endl;
     }
   }
   return;
+}
+
+void serverConnect() {
+  bool received = false;
+  while (!received) {
+    try {
+      std::cout << "Trying connection to server..." << std::endl;
+      struct sockaddr_in dest;
+      dest.sin_port = htons(coordinatorPort);
+      short packetID = rand() % 8999 + 1000;
+      connectionPacket cp;
+      cp.packetID = packetID;
+      std::cout << cp.packetID << std::endl;
+      std::vector<unsigned char> data(sizeof(cp));
+      std::memcpy(data.data(), &cp, sizeof(cp));
+      std::cout << "Sending To: " << lockerSocket.port( ) << std::endl;
+      int numWrite = lockerSocket.write(data, dest);
+      std::cout << "Wrote " << numWrite << " bytes" << std::endl;
+      std::string type = "Connection";
+      received = receivePacket(type, packetID);
+      } catch ( std::exception& ex ) {
+        std::cout << "Failed" << std::endl;
+      }
+  }
 }
 
 
@@ -68,7 +103,7 @@ void printBicycles() {
   }
 }
 
-void removeBicycle(int locker) {
+void removeBicycle(int locker, int userID) {
   int bicycleID;
   if(locker >= capacity || locker < 0 || bicycles[locker] < 1) {
     std::cout << "Invalid locker number, couldn't remove bicycle." << std::endl;
@@ -76,18 +111,18 @@ void removeBicycle(int locker) {
   }
   bicycleID = bicycles[locker];
   bicycles[locker] = 0;
-  sendPacket(locker, bicycleID);
-  std::cout << "Bicycle " << bicycleID << " removed from locker " << locker << std::endl;
+  sendPacket('0', bicycleID, userID);
+  std::cout << "Bicycle " << bicycleID << " removed from locker " << locker << "by user: " << userID << std::endl;
 }
 
-void addBicycle(int locker, int bicycleID) {
+void addBicycle(int locker, int bicycleID, int userID) {
   if(locker >= capacity || locker < 0 || bicycles[locker] != 0) {
     std::cout << "Invalid locker number, couldn't add bicycle." << std::endl;
     return;
   }
   bicycles[locker] = bicycleID;
-  sendPacket(locker, bicycleID);
-  std::cout << "Bicycle " << bicycleID << " added to locker " << locker << std::endl;
+  sendPacket('1', bicycleID, userID);
+  std::cout << "Bicycle " << bicycleID << " added to locker " << locker << "by user: " << userID << std::endl;
 }
 
 
@@ -109,6 +144,7 @@ int main( int argc, char **argv ) {
   input = argv[2];
   sscanf(input.c_str(), "%d", &capacity);
   bicycles = (int*) malloc(capacity*sizeof(int));
+  srand(time(NULL));
 
   if(argc < capacity+3) { 
     std::cout << "Initialisation Error: Too few arguments" << std::endl; 
@@ -125,21 +161,25 @@ int main( int argc, char **argv ) {
     sscanf(input.c_str(), "%d", &bicycles[i]);
     std::cout << "Bicycle with id: " << bicycles[i] << " added to locker " << i << std::endl;
   }
+
+  std::cout << "Initiasalising connection to specified coordinator server..." << std::endl;
+  serverConnect();
+  std::cout << "Connection success!" << std::endl;
   
   std::cout << "---------------------------------------------" << std::endl;
   std::cout << "-------------Locker Initialised--------------" << std::endl;
 
   int locker;
   int bicycleID;
+  int userID;
   int p;
-  srand(time(NULL));
 
   while(1) {    
     std::cout << "---------------------------------------------" << std::endl;
     printBicycles();
     std::cout << "---------------------------------------------" << std::endl;
-    std::cout << "Add Bicycle: 1 lockerNumber bicycleID" << std::endl;
-    std::cout << "Remove Bicycle: 2 lockerNumber" << std::endl;
+    std::cout << "Add Bicycle: 1 lockerNumber bicycleID userID" << std::endl;
+    std::cout << "Remove Bicycle: 2 lockerNumber userID" << std::endl;
     std::cout << "Terminate Locker Set: 3" << std::endl;
     std::cout << "---------------------------------------------" << std::endl;
     std::cin >> input;
@@ -156,17 +196,21 @@ int main( int argc, char **argv ) {
         sscanf(input.c_str(), "%d", &locker);
         std::cin >> input;
         sscanf(input.c_str(), "%d", &bicycleID);  
-        addBicycle(locker, bicycleID);
+        std::cin >> input;
+        sscanf(input.c_str(), "%d", &userID); 
+        addBicycle(locker, bicycleID, userID);
         break;
 
       case 2:
         std::cin >> input;
         sscanf(input.c_str(), "%d", &locker);
-        removeBicycle(locker);
+        std::cin >> input;
+        sscanf(input.c_str(), "%d", &userID);
+        removeBicycle(locker, userID);
         break;
 
       case 4:
-        receivePacket(1000);
+        //receivePacket(1000);
         break;
 
       default:
