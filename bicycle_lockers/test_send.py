@@ -7,8 +7,9 @@ def int_to_bytes(val, num_bytes):
 
 
 UDP_IP = "127.0.0.1"
-UDP_PORT = 37778 # Change this for the particular server port
-MESSAGE = 42774
+UDP_PORT = 37777 # Change this for the particular server port
+MESSAGE = 1523
+FLAG = 7
 
 print("UDP target IP:", UDP_IP)
 print("UDP target port:", UDP_PORT)
@@ -18,4 +19,4 @@ print("message:", MESSAGE)
 #data = int(data)
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
-sock.sendto(struct.pack('>H', MESSAGE), (UDP_IP, UDP_PORT))
+sock.sendto(struct.pack('>H', FLAG)+struct.pack('>H', MESSAGE) , (UDP_IP, UDP_PORT))
