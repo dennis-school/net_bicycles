@@ -19,6 +19,11 @@ app.get( '/', ( req, res ) => {
   res.render( 'user_index' );
 } );
 
+app.get( '/statistics', ( req, res ) => {
+  res.status( 200 );
+  res.render( 'admin_index' );
+} );
+
 app.all( '*', ( req, res ) => {
   res.status( 404 );
   res.contentType( 'text/plain' );
