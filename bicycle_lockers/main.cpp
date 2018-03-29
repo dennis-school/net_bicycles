@@ -6,7 +6,7 @@
 #include <sstream>
 #include <string.h>
 #include "udp_socket.h"
-#include "transaction_packet.h"
+#include "locker_packets.h"
 
 int capacity;
 int *bicycles;
@@ -18,15 +18,16 @@ bool receivePacket(std::string type, int packetID) {
   try {
     std::cout << "Running: " << lockerSocket.port( ) << std::endl;
     struct sockaddr src;
-    std::vector< unsigned char > data( 100 );
+    std::vector< unsigned char > data(32);
     // Note: Currently blocking
     int numRead = lockerSocket.read( data, src );
     std::cout << "Read " << numRead << " bytes" << std::endl;
     std::string dataStr( data.begin( ), data.begin( ) + numRead );
     std::cout << "Message: " << dataStr << std::endl;
     int receivedID;
-    sscanf(dataStr.c_str(), "%d", &receivedID);
-    if(receivedID==packetID) {
+    receivedID = (data[0] << 8) | data[1];
+    std::cout << "Received: " << receivedID << " ID: " << packetID << std::endl;
+    if(ntohs(receivedID)==packetID) {
       std::cout << type << " confirmed!" << std::endl;
       return true;
     } else {
@@ -48,13 +49,13 @@ void sendPacket(char type, int bicycleID, int userID) {
       struct sockaddr_in dest;
       dest.sin_port = htons(coordinatorPort);
       short packetID = rand() % 8999 + 1000;
-
       transactionPacket tp;
-      tp.packetID = packetID;
+      tp.packetID = htons(packetID);
       tp.type = (unsigned) type;
       ss << bicycleID;
-      strcpy(tp.bicycleID, ss.str().c_str());
-      tp.userID = userID;
+      strcpy((char*)tp.bicycleID, ss.str().c_str());
+      tp.userID = htonl(userID);
+      std::cout << ntohs(tp.packetID) << " " << tp.type << " " << tp.bicycleID << " " << ntohl(tp.userID) << std::endl;
       std::cout << tp.packetID << " " << tp.type << " " << tp.bicycleID << " " << tp.userID << std::endl;
       
       std::vector<unsigned char> data(sizeof(tp));
@@ -80,9 +81,10 @@ void serverConnect() {
       struct sockaddr_in dest;
       dest.sin_port = htons(coordinatorPort);
       short packetID = rand() % 8999 + 1000;
+      std::cout << packetID << std::endl;
       connectionPacket cp;
-      cp.packetID = packetID;
-      std::cout << cp.packetID << std::endl;
+      cp.packetID = htons(packetID);
+      std::cout << cp.flag << " " << cp.packetID << std::endl;
       std::vector<unsigned char> data(sizeof(cp));
       std::memcpy(data.data(), &cp, sizeof(cp));
       std::cout << "Sending To: " << lockerSocket.port( ) << std::endl;
