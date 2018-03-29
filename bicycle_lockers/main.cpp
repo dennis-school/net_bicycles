@@ -8,33 +8,116 @@
 #include "udp_socket.h"
 #include "locker_packets.h"
 
+const char *port = "37777";
 int capacity;
 int *bicycles;
-int port;
-int coordinatorPort = 37777;
+int coordinatorPort;
+int backupCoordinator;
 UDPSocket lockerSocket;
 
-bool receivePacket(std::string type, int packetID) {
+
+void serverConnect();
+bool receivePacket(int packetID);
+
+bool sendLifeCheckPacket() {
+  bool alive;
+  for(int i=0; i<3; i++){
+    try {
+      std::stringstream ss;
+      struct sockaddr_in dest;
+      dest.sin_addr.s_addr = inet_addr("127.0.0.1");
+      dest.sin_family = AF_INET;
+      dest.sin_port = htons(coordinatorPort);
+      short packetID = rand() % 8999 + 1000;
+      lifeCheckPacket lcp;
+      lcp.packetID = htons(packetID);
+      std::vector<unsigned char> data(sizeof(lcp));
+      std::memcpy(data.data(), &lcp, sizeof(lcp));
+      std::cout << "Sending life check to : " << lockerSocket.port( ) << std::endl;
+      int numWrite = lockerSocket.write(data, dest);
+      std::cout << "Wrote " << numWrite << " bytes" << std::endl;
+      alive = receivePacket(packetID);
+     } catch ( std::exception& ex ) {
+      std::cout << "Failed" << std::endl;
+    }
+  }
+  return alive;
+}
+
+bool handlePacket(receivedPacket rp, int packetID, sockaddr_in src) {
+
+  switch(rp.flag) {
+    case 1: //life response
+      if(packetID == rp.packetID) {
+        std::cout << "Coordinator still alive, staying connected." << std::endl;
+        return true;
+      } else {
+        std::cout << "Coordinator not found, retrying..." << std::endl;
+        return false;
+      }
+
+    case 4: //connection accepted
+      if(packetID == rp.packetID) {
+        std::cout << "Connection to coordinator server accepted!" << std::endl;
+        return true;
+      } else {
+        std::cout << "Connection to coordinator server failed, retrying..." << std::endl;
+        return false;
+      }
+
+    case 5: //connection rejected
+      if(packetID == rp.packetID) {
+        std::cout << "Connection to coordinator server rejected." << std::endl;
+        return true;
+      } else {
+        std::cout << "Connection to coordinator server failed, retrying..." << std::endl;
+        return false;
+      }
+
+    case 6: //check/replace connection
+      if(sendLifeCheckPacket()) {
+        return true;
+      } else {
+        coordinatorPort = ntohs(src.sin_port); 
+        serverConnect();
+        return false;
+      }
+
+
+    case 7: //transaction accepted
+      if(packetID == rp.packetID) {
+        std::cout << "Transaction confirmed!" << std::endl;
+        return true;
+      } else {
+        std::cout << "Failed to confirm transaction, retrying..." << std::endl;
+        return false;
+      }
+      
+
+
+    default:
+      std::cout << "Unrecognised message from coordinator server. Packet type: " << rp.flag << std::endl;
+      break;
+  }
+}
+
+bool receivePacket(int packetID) {
   try {
     std::cout << "Running: " << lockerSocket.port( ) << std::endl;
-    struct sockaddr src;
+    struct sockaddr_in src;
     std::vector< unsigned char > data(32);
     // Note: Currently blocking
     int numRead = lockerSocket.read( data, src );
     std::cout << "Read " << numRead << " bytes" << std::endl;
     std::string dataStr( data.begin( ), data.begin( ) + numRead );
     std::cout << "Message: " << dataStr << std::endl;
-    int receivedID;
-    receivedID = (data[0] << 8) | data[1];
-    std::cout << "Received: " << receivedID << " ID: " << packetID << std::endl;
-    if(ntohs(receivedID)==packetID) {
-      std::cout << type << " confirmed!" << std::endl;
-      return true;
-    } else {
-      std::cout << type << " failed, retrying." << std::endl;
-      return false;
-    }
-  } catch ( std::exception& ex ) {
+    receivedPacket *rp;
+    rp = (receivedPacket*) dataStr.c_str();
+    rp->flag = ntohs(rp->flag);
+    rp->packetID = ntohs(rp->packetID);
+    std::cout << rp->flag << "  " << rp->packetID << std::endl;
+    return handlePacket(*rp, packetID, src);
+    } catch ( std::exception& ex ) {
     std::cout << "Failed" << std::endl;
     return false;
   }
@@ -47,6 +130,8 @@ void sendPacket(char type, int bicycleID, int userID) {
     try {
       std::stringstream ss;
       struct sockaddr_in dest;
+      dest.sin_addr.s_addr = inet_addr("127.0.0.1");
+      dest.sin_family = AF_INET;
       dest.sin_port = htons(coordinatorPort);
       short packetID = rand() % 8999 + 1000;
       transactionPacket tp;
@@ -62,11 +147,11 @@ void sendPacket(char type, int bicycleID, int userID) {
       std::memcpy(data.data(), &tp, sizeof(tp));
       ss << packetID << " " << " " << bicycleID;
       std::cout << "Sending To: " << lockerSocket.port( ) << std::endl;
+
       int numWrite = lockerSocket.write(data, dest);
       std::cout << "Wrote " << numWrite << " bytes" << std::endl;
-      std::string type = "Transaction";
-      received = receivePacket(type, packetID);
-    } catch ( std::exception& ex ) {
+      received = receivePacket(packetID);
+     } catch ( std::exception& ex ) {
       std::cout << "Failed" << std::endl;
     }
   }
@@ -80,6 +165,8 @@ void serverConnect() {
       std::cout << "Trying connection to server..." << std::endl;
       struct sockaddr_in dest;
       dest.sin_port = htons(coordinatorPort);
+      dest.sin_addr.s_addr = inet_addr("127.0.0.1");
+      dest.sin_family = AF_INET;
       short packetID = rand() % 8999 + 1000;
       std::cout << packetID << std::endl;
       connectionPacket cp;
@@ -90,8 +177,7 @@ void serverConnect() {
       std::cout << "Sending To: " << lockerSocket.port( ) << std::endl;
       int numWrite = lockerSocket.write(data, dest);
       std::cout << "Wrote " << numWrite << " bytes" << std::endl;
-      std::string type = "Connection";
-      received = receivePacket(type, packetID);
+      received = receivePacket(packetID);
       } catch ( std::exception& ex ) {
         std::cout << "Failed" << std::endl;
       }
@@ -114,7 +200,7 @@ void removeBicycle(int locker, int userID) {
   bicycleID = bicycles[locker];
   bicycles[locker] = 0;
   sendPacket('0', bicycleID, userID);
-  std::cout << "Bicycle " << bicycleID << " removed from locker " << locker << "by user: " << userID << std::endl;
+  std::cout << "Bicycle " << bicycleID << " removed from locker " << locker << " by user: " << userID << std::endl;
 }
 
 void addBicycle(int locker, int bicycleID, int userID) {
@@ -124,7 +210,7 @@ void addBicycle(int locker, int bicycleID, int userID) {
   }
   bicycles[locker] = bicycleID;
   sendPacket('1', bicycleID, userID);
-  std::cout << "Bicycle " << bicycleID << " added to locker " << locker << "by user: " << userID << std::endl;
+  std::cout << "Bicycle " << bicycleID << " added to locker " << locker << " by user: " << userID << std::endl;
 }
 
 
@@ -140,12 +226,16 @@ int main( int argc, char **argv ) {
     return 0;
   }
 
-  char *portno = argv[1];
-  lockerSocket = UDPSocket(portno);
   std::string input;
+  input = argv[1];
+  sscanf(input.c_str(), "%d", &coordinatorPort);
+
+  lockerSocket = UDPSocket(port);
+
   input = argv[2];
   sscanf(input.c_str(), "%d", &capacity);
   bicycles = (int*) malloc(capacity*sizeof(int));
+
   srand(time(NULL));
 
   if(argc < capacity+3) { 
@@ -164,7 +254,7 @@ int main( int argc, char **argv ) {
     std::cout << "Bicycle with id: " << bicycles[i] << " added to locker " << i << std::endl;
   }
 
-  std::cout << "Initiasalising connection to specified coordinator server..." << std::endl;
+  std::cout << "Initialising connection to specified coordinator server..." << std::endl;
   serverConnect();
   std::cout << "Connection success!" << std::endl;
   
@@ -222,7 +312,7 @@ int main( int argc, char **argv ) {
   try {
     UDPSocket socket;
     std::cout << "Running: " << socket.port( ) << std::endl;
-    struct sockaddr src;
+    struct sockaddr_in src;
     std::vector< unsigned char > data( 100 );
     // Note: Currently blocking
     int numRead = socket.read( data, src );

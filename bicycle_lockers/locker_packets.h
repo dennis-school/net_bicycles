@@ -20,4 +20,14 @@ typedef struct connectionPacket {
 	uint16_t packetID; //randomly generated ID for checking successful transmassion
 } connectionPacket;
 
+typedef struct lifeCheckPacket {
+	uint16_t flag = htons(1); //used by coordinator to denote connection packet
+	uint16_t packetID; //randomly generated ID for checking successful transmassion
+} lifeCheckPacket;
+
+typedef struct receivedPacket {
+	uint16_t flag;
+	uint16_t packetID;
+} receivedPacket;
+
 #endif

@@ -80,21 +80,17 @@ int UDPSocket::port( ) const {
   return m_port;
 }
 
-int UDPSocket::read( std::vector< unsigned char >& data, struct sockaddr &dstPacketSrc ) {
+int UDPSocket::read( std::vector< unsigned char >& data, struct sockaddr_in &dstPacketSrc ) {
   socklen_t addrlen = sizeof( struct sockaddr );
   // TODO: Use MSG_DONTWAIT after epoll() is setup
-  int numRead = recvfrom( m_fd, &data[0], data.size( ), 0, &dstPacketSrc, &addrlen );
+  int numRead = recvfrom( m_fd, &data[0], data.size( ), 0, (struct sockaddr *) &dstPacketSrc, &addrlen );
   //std::cout << "Read: " << numRead << std::endl;
   return numRead;
 }
 
 int UDPSocket::write( std::vector< unsigned char >& data, struct sockaddr_in &dstPacketDest ) {
   socklen_t addrlen = sizeof( struct sockaddr_in );
-  struct sockaddr_in sin;
-  sin.sin_addr.s_addr = inet_addr("127.0.0.1");
-  sin.sin_family = AF_INET;
-  sin.sin_port = htons(37777);
-  int numWrite = sendto( m_fd, &data[0], data.size(), 0, (struct sockaddr *) &sin, addrlen);
+  int numWrite = sendto( m_fd, &data[0], data.size(), 0, (struct sockaddr *) &dstPacketDest, addrlen);
   return numWrite;
 
 }
