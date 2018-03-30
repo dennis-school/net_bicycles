@@ -60,6 +60,8 @@ public class Coordinator {
 	public Coordinator(int id) {
 		this.coordinator_id = id;
 		this.database = new Database();
+		this.listeningLockers = new ArrayList<SocketAddress>();
+		this.waitingLockers = new ArrayList<SocketAddress>();
 		
 		createUDPSocket( this.coordinator_id );
 		
@@ -71,7 +73,7 @@ public class Coordinator {
 		this.aliveTimerListener = ( ev -> {
 			this.aliveTimer.stop();
 			this.neighbours = database.getNeighbours( id );
-			System.out.println( coordinator_id + " try to find neighbours");
+			System.out.println( "Coordinator" + coordinator_id + " try to find neighbours");
 			
 			// threads for each neighbour to check their status
 			this.lifeCheckers = new HashMap<SocketAddress, LifeChecker>();
