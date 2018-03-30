@@ -10,7 +10,7 @@
 
 const char *port = "37777";
 int capacity;
-int *bicycles;
+char **bicycles;
 int coordinatorPort;
 int backupCoordinator;
 UDPSocket lockerSocket;
@@ -124,7 +124,7 @@ bool receivePacket(int packetID) {
 
 }
 
-void sendPacket(char type, int bicycleID, int userID) {
+void sendPacket(char type, char* bicycleID, int userID) {
   bool received = false;
   while(!received) {
     try {
@@ -137,8 +137,7 @@ void sendPacket(char type, int bicycleID, int userID) {
       transactionPacket tp;
       tp.packetID = htons(packetID);
       tp.type = (unsigned) type;
-      ss << bicycleID;
-      strcpy((char*)tp.bicycleID, ss.str().c_str());
+      strcpy((char*)tp.bicycleID, bicycleID);
       tp.userID = htonl(userID);
       std::cout << ntohs(tp.packetID) << " " << tp.type << " " << tp.bicycleID << " " << ntohl(tp.userID) << std::endl;
       std::cout << tp.packetID << " " << tp.type << " " << tp.bicycleID << " " << tp.userID << std::endl;
@@ -192,8 +191,8 @@ void printBicycles() {
 }
 
 void removeBicycle(int locker, int userID) {
-  int bicycleID;
-  if(locker >= capacity || locker < 0 || bicycles[locker] < 1) {
+  char *bicycleID;
+  if(locker >= capacity || locker < 0 || strcmp(bicycles[locker], "Empty+")) {
     std::cout << "Invalid locker number, couldn't remove bicycle." << std::endl;
     return;
   }
@@ -203,7 +202,7 @@ void removeBicycle(int locker, int userID) {
   std::cout << "Bicycle " << bicycleID << " removed from locker " << locker << " by user: " << userID << std::endl;
 }
 
-void addBicycle(int locker, int bicycleID, int userID) {
+void addBicycle(int locker, char *bicycleID, int userID) {
   if(locker >= capacity || locker < 0 || bicycles[locker] != 0) {
     std::cout << "Invalid locker number, couldn't add bicycle." << std::endl;
     return;
@@ -227,30 +226,37 @@ int main( int argc, char **argv ) {
   }
 
   std::string input;
-  input = argv[1];
+  port = argv[1];
+
+
+  input = argv[2];
   sscanf(input.c_str(), "%d", &coordinatorPort);
 
   lockerSocket = UDPSocket(port);
 
-  input = argv[2];
+  input = argv[3];
   sscanf(input.c_str(), "%d", &capacity);
-  bicycles = (int*) malloc(capacity*sizeof(int));
+
+  bicycles = (char**) malloc(capacity*sizeof(char*));
+  
+  for (int i=0; i<capacity; i++) {
+    bicycles[i] = (char*) malloc(10*sizeof(char));
+  }
 
   srand(time(NULL));
 
-  if(argc < capacity+3) { 
+  if(argc < capacity+4) { 
     std::cout << "Initialisation Error: Too few arguments" << std::endl; 
     return 0;
   }
 
-  if(argc > capacity+3) { std::cout << "Initialisation Warning: Too many arguments, only first " << capacity+2 << " arguments used." << std::endl; }
+  if(argc > capacity+4) { std::cout << "Initialisation Warning: Too many arguments, only first " << capacity+2 << " arguments used." << std::endl; }
 
   std::cout << "Locker initialised with " << capacity << " lockers." << std::endl;
   std::cout << "Setting up lockers with bicycle ids:" << std::endl;
   
   for(int i=0; i<capacity; i++) {
-    input = argv[i+3];
-    sscanf(input.c_str(), "%d", &bicycles[i]);
+    bicycles[i] = argv[i+4];
     std::cout << "Bicycle with id: " << bicycles[i] << " added to locker " << i << std::endl;
   }
 
@@ -262,7 +268,7 @@ int main( int argc, char **argv ) {
   std::cout << "-------------Locker Initialised--------------" << std::endl;
 
   int locker;
-  int bicycleID;
+  char* bicycleID;
   int userID;
   int p;
 
@@ -281,13 +287,16 @@ int main( int argc, char **argv ) {
       case 3:
         std::cout << "Terminating Locker Set" << std::endl;
         std::cout << "---------------------------------------------" << std::endl;
+        for (int i=0; i<capacity; i++) {
+          free(bicycles[i]);
+        }
+        free(bicycles);
         return 1;
 
       case 1:
         std::cin >> input;
         sscanf(input.c_str(), "%d", &locker);
-        std::cin >> input;
-        sscanf(input.c_str(), "%d", &bicycleID);  
+        std::cin >> bicycleID;
         std::cin >> input;
         sscanf(input.c_str(), "%d", &userID); 
         addBicycle(locker, bicycleID, userID);

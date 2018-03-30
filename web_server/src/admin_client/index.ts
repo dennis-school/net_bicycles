@@ -10,7 +10,7 @@ class Statistic {
 }
 
 function requestStatistics( ): Promise< Statistic[] > {
-  return fetch( '/api/statistics' ).then( res => {
+  return fetch( '/api/statistics/30' ).then( res => {
     if ( !res.ok || res.status !== 200 ) {
       throw 'Request failed';
     }
@@ -35,12 +35,15 @@ document.addEventListener( 'DOMContentLoaded', ( ) => {
   let tableContainer = <HTMLDivElement> document.getElementById( 'table-container' );
 
   function buildTable( statistics: Statistic[] ) {
+    statistics.reverse( );
+
     let table = document.createElement( 'table' );
     let header = document.createElement( 'tr' );
     let headerTimestamp = document.createElement( 'th' );
     headerTimestamp.innerText = 'Date + time';
     let headerValue = document.createElement( 'th' );
-    headerValue.innerText = 'Value';
+    headerValue.innerText = '#transactions';
+    headerValue.style.textAlign = 'right';
     header.appendChild( headerTimestamp );
     header.appendChild( headerValue );
     table.appendChild( header );
