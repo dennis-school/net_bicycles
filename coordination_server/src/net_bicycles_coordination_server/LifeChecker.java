@@ -22,7 +22,7 @@ public class LifeChecker implements Runnable {
 		this.socketAddress = socketAddress;
 		this.socket = coordinator.getDatagramSocket();
 		this.aliveTimerListener = ( ev -> {
-			System.out.println( "No! I'm dead!" );
+			System.out.println( "Find dead coordinator " + socketAddress );
 			this.aliveTimer.stop();
 			//this.coordinator.removeCoordinator( port );
 			takeOverLockers( );
@@ -55,7 +55,7 @@ public class LifeChecker implements Runnable {
 			
 			try {
 				socket.send( packet );
-				System.out.println( socket.getLocalPort() + ": check " + packet.getSocketAddress() );
+				//System.out.println( socket.getLocalPort() + ": check " + packet.getSocketAddress() );
 				Thread.sleep( 1000 );
 			} catch (IOException | InterruptedException e) {
 				e.printStackTrace();
