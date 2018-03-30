@@ -6,12 +6,16 @@ import Database.Database;
 
 public class Main {
 	public static void main( String... args ) {
+		/*
 		Database database = new Database();
 		ArrayList<Integer> coordinators = database.getCoordinators();
 		for( int coordinator: coordinators) {
 			Coordinator c = new Coordinator(coordinator);
 			System.out.println("Coordinator" + coordinator + " start work");
 		}
-		return;
+		*/
+		int id = Integer.parseInt(args[0]);
+		new Coordinator( id );
+		
 	}
 }

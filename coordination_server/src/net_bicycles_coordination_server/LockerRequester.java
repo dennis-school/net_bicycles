@@ -8,6 +8,11 @@ import java.util.ArrayList;
 
 import Packet.PacketReplaceConnectionRequest;
 
+/**
+ * Tell locker the death of coordinator
+ * @author Luigi
+ *
+ */
 public class LockerRequester implements Runnable {
 
 	private Coordinator coordinator;

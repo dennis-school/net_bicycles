@@ -1,6 +1,7 @@
 package net_bicycles_coordination_server;
 
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
@@ -14,7 +15,9 @@ import java.util.HashMap;
 import javax.swing.Timer;
 
 import Database.Database;
+import Packet.PacketConnectionReject;
 import Packet.PacketReplaceConnectionRequest;
+import Packet.PacketRestart;
 
 /**
  * Coordinator that handle message from Locker, modify Database, communicate with each other
@@ -70,9 +73,18 @@ public class Coordinator {
 		Thread t = new Thread( server );
 		t.start();
 
+		if( this.database.noFreeLocker() ) {
+			restartWholeSystem();
+		}else {
+			initChecker();
+		}
+		
+	}
+	
+	private void initChecker() {
 		this.aliveTimerListener = ( ev -> {
 			this.aliveTimer.stop();
-			this.neighbours = database.getNeighbours( id );
+			this.neighbours = database.getNeighbours( this.coordinator_id );
 			System.out.println( "Coordinator" + coordinator_id + " try to find neighbours");
 			
 			// threads for each neighbour to check their status
@@ -81,7 +93,36 @@ public class Coordinator {
 		} );
 		this.aliveTimer = new Timer( 10000, aliveTimerListener );
 		this.aliveTimer.start();
+	}
+	
+	/**
+	 * restart all coordinators and all lockers
+	 */
+	private void restartWholeSystem() {
+		ArrayList<SocketAddress> allAddress = this.database.getAllAddress();
+		this.database.restartLocker();
 		
+		PacketRestart packet = new PacketRestart();
+		byte[] fullPacket = packet.toBinary( coordinator_id );
+		for( SocketAddress address : allAddress ) {
+			DatagramPacket datapacket = new DatagramPacket( fullPacket, fullPacket.length, address);
+			try {
+				socket.send( datapacket );
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		restart();
+	}
+	
+	/**
+	 * restart coordinator itself
+	 */
+	public void restart() {
+		this.listeningLockers.clear();
+		this.waitingLockers.clear();
+		initChecker();
 	}
 
 	// check life status for surrounding coordinators
@@ -98,8 +139,9 @@ public class Coordinator {
 		this.neighbours.remove( coordinator );
 	}
 	
-	public synchronized void addListeningLockers( SocketAddress locker ) {
-		this.listeningLockers.add( locker );
+	public synchronized void addListeningLockers( SocketAddress locker_address ) {
+		this.database.takeLocker( locker_address, coordinator_id );
+		this.listeningLockers.add( locker_address );
 	}
 	
 	public synchronized void addWaitingLockers( SocketAddress locker ) {
@@ -147,13 +189,10 @@ public class Coordinator {
 	 * @param locker_address
 	 * @return
 	 */
-	public boolean takeFreeLocker( SocketAddress locker_address ) {
+	public boolean isFreeLocker( SocketAddress locker_address ) {
 		boolean isFree = database.isFreeLocker( locker_address );
-		if( isFree ) {
-			database.takeLocker( locker_address, coordinator_id );
-			return true;
-		}
-		return false;
+		
+		return isFree;
 	}
 	
 	public void insertBicycleTransection(int isRemoved, String bicycle_id, int user_id, SocketAddress locker_address){

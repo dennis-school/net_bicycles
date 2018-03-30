@@ -39,6 +39,7 @@ public class CoordinatorServer implements Runnable {
 		this.packetHandlers.put( PacketType.Packet_CONNECTION_REQUEST.id, new PacketConnectionRequestHandler(this.coordinator) );
 		this.packetHandlers.put( PacketType.Packet_CONNECTION_ACCEPT.id, new PacketConnectionAcceptHandler(this.coordinator) );
 		this.packetHandlers.put( PacketType.Packet_CONNECTION_REJICT.id, new PacketConnectionRejectHandler(this.coordinator) );
+		this.packetHandlers.put( PacketType.Packet_Restart.id, new PacketRestartHandler(this.coordinator) );
 	}
 
 	// handle a unknown type package

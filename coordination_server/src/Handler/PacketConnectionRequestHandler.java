@@ -30,7 +30,7 @@ public class PacketConnectionRequestHandler implements PacketHandler {
 	public void handlePacket(ByteArrayInputStream bais, SocketAddress locker_address, int packet_id) {
 		byte[] fullPacket = null;
 		
-		if( coordinator.takeFreeLocker( locker_address ) ) {
+		if( coordinator.isFreeLocker( locker_address ) ) {
 			
 			coordinator.addListeningLockers( locker_address );
 			PacketConnectionAccept packet = new PacketConnectionAccept();

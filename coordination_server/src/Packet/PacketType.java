@@ -19,7 +19,10 @@ public enum PacketType {
 	Packet_REPLACE_CONNECTION_REQUEST( 6 ),
 	
 	// packet from coordinator to locker to approve a transaction
-	Packet_Transaction_Approved( 7 );
+	Packet_Transaction_Approved( 7 ),
+	
+	// pakcet form coordinator to locker/coordinator to restart
+	Packet_Restart( 8 );
 	
 	public final int id;
 	

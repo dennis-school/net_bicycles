@@ -314,5 +314,60 @@ public class Database {
 			e.printStackTrace();
 		}
 	}
+
+	public boolean noFreeLocker() {
+		sql = "SELECT * FROM locker_set WHERE ISNULL(coordinator_id);";
+		ResultSet rs;
+		try {
+			rs = stmt.executeQuery(sql);
+			if( rs.next() ) {
+				rs.close();
+				return false;
+			}
+			rs.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return true;
+	}
+
+	public ArrayList<SocketAddress> getAllAddress() {
+		ArrayList<SocketAddress> addresses = new ArrayList<SocketAddress>();
+		ResultSet rs;
+		InetAddress inetAddress;
+		int port;
+		InetSocketAddress socketAddress;
+		
+		sql = "SELECT ip, port\r\n" + 
+				"FROM locker_set \r\n" + 
+				"UNION\r\n" + 
+				"SELECT ip, port \r\n" + 
+				"FROM coordinator;";
+		try {
+			rs = stmt.executeQuery(sql);
+			while( rs.next() ) {
+				inetAddress = InetAddress.getByName(rs.getString("ip"));
+				port = rs.getInt("port");
+				socketAddress = new InetSocketAddress( inetAddress, port );
+				addresses.add( socketAddress );
+			}
+			rs.close();
+		} catch (SQLException | UnknownHostException e) {
+			e.printStackTrace();
+		}
+		
+		
+		return addresses;
+	}
+
+	public void restartLocker() {
+		sql ="update locker_set set coordinator_id = null;";
+		try {
+			stmt.executeUpdate( sql );
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 	
 }

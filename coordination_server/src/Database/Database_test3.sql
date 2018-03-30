@@ -1,5 +1,5 @@
 SET SQL_SAFE_UPDATES = 0;
-SET FOREIGN_KEY_CHECKS = 0;
+
 use database_test;
 
 -- test insert transactions
@@ -65,3 +65,11 @@ LIMIT 2;
 */
 
 -- update locker_set set coordinator_id = null where id = 62;
+/*
+SELECT ip, port
+FROM locker_set 
+UNION
+SELECT ip, port 
+FROM coordinator;
+*/
+update locker_set set coordinator_id = null;
