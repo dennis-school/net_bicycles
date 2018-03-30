@@ -16,7 +16,7 @@
 const char *port = "37777";
 int capacity;
 char **bicycles;
-int coordinatorPort;
+int coordinatorPort, initialPort;
 int backupCoordinator;
 UDPSocket lockerSocket;
 
@@ -96,6 +96,11 @@ bool handlePacket(receivedPacket rp, int packetID, sockaddr_in src) {
         std::cout << "Failed to confirm transaction, please retry." << std::endl;
         return false;
       }
+
+    case 8:
+      coordinatorPort = initialPort;
+      serverConnect();
+      return true;
 
     default:
       std::cout << "Unrecognised message from coordinator server. Packet type: " << rp.flag << std::endl;
@@ -238,6 +243,7 @@ void handleStdin() {
       std::cout << "Terminating Locker Set" << std::endl;
       std::cout << "---------------------------------------------" << std::endl;
       for (int i=0; i<capacity; i++) {
+        std::cout << "Freeing " << i << std::endl;
         free(bicycles[i]);
       }
       free(bicycles);
@@ -290,6 +296,7 @@ int main( int argc, char **argv ) {
 
   input = argv[2];
   sscanf(input.c_str(), "%d", &coordinatorPort);
+  initialPort = coordinatorPort;
 
   lockerSocket = UDPSocket(port);
   struct epoll_event evSock, evIn, events[2];
