@@ -34,6 +34,25 @@ public class Database {
 		}
 	}
 
+	public ArrayList<Integer> getCoordinators(){
+		ArrayList<Integer> coordinators = new ArrayList<Integer>();
+		sql = "SELECT * FROM coordinator;";
+		
+		ResultSet rs;
+		
+		try {
+			rs = stmt.executeQuery(sql);
+			while( rs.next() ) {
+				coordinators.add( rs.getInt("id"));
+			}
+			rs.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return coordinators;
+	}
+	
 	/**
 	 * return locker_id by using its socket address
 	 * @param locker_address
