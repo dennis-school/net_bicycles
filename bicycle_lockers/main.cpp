@@ -214,7 +214,7 @@ void removeBicycle(int locker, int userID) {
 }
 
 void addBicycle(int locker, std::string bicycleID, int userID) {
-  if(locker >= capacity || locker < 0 || bicycles[locker] != 0) {
+  if(locker >= capacity || locker < 0 || strcmp(bicycles[locker], "Empty") != 0 ) {
     std::cout << "Invalid locker number, couldn't add bicycle." << std::endl;
     return;
   }
