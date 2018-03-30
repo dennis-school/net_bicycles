@@ -5,8 +5,13 @@
 #include <arpa/inet.h>
 #include <sstream>
 #include <string.h>
+#include <sys/epoll.h>
 #include "udp_socket.h"
 #include "locker_packets.h"
+
+#define WAIT_TRANSACTION 3
+#define WAIT_SERVERCONNECT 0
+#define WAIT_LIFESIGNAL 5 
 
 const char *port = "37777";
 int capacity;
@@ -17,30 +22,29 @@ UDPSocket lockerSocket;
 
 
 void serverConnect();
-bool receivePacket(int packetID);
+bool receivePacket(int packetID, int wait);
 
 bool sendLifeCheckPacket() {
   bool alive;
-  for(int i=0; i<3; i++){
-    try {
-      std::stringstream ss;
-      struct sockaddr_in dest;
-      dest.sin_addr.s_addr = inet_addr("127.0.0.1");
-      dest.sin_family = AF_INET;
-      dest.sin_port = htons(coordinatorPort);
-      short packetID = rand() % 8999 + 1000;
-      lifeCheckPacket lcp;
-      lcp.packetID = htons(packetID);
-      std::vector<unsigned char> data(sizeof(lcp));
-      std::memcpy(data.data(), &lcp, sizeof(lcp));
-      std::cout << "Sending life check to : " << lockerSocket.port( ) << std::endl;
-      int numWrite = lockerSocket.write(data, dest);
-      std::cout << "Wrote " << numWrite << " bytes" << std::endl;
-      alive = receivePacket(packetID);
-     } catch ( std::exception& ex ) {
-      std::cout << "Failed" << std::endl;
-    }
+  try {
+    std::stringstream ss;
+    struct sockaddr_in dest;
+    dest.sin_addr.s_addr = inet_addr("127.0.0.1");
+    dest.sin_family = AF_INET;
+    dest.sin_port = htons(coordinatorPort);
+    short packetID = rand() % 8999 + 1000;
+    lifeCheckPacket lcp;
+    lcp.packetID = htons(packetID);
+    std::vector<unsigned char> data(sizeof(lcp));
+    std::memcpy(data.data(), &lcp, sizeof(lcp));
+    std::cout << "Sending life check to : " << lockerSocket.port( ) << std::endl;
+    int numWrite = lockerSocket.write(data, dest);
+    std::cout << "Wrote " << numWrite << " bytes" << std::endl;
+    alive = receivePacket(packetID, WAIT_LIFESIGNAL);
+  } catch ( std::exception& ex ) {
+    std::cout << "Failed" << std::endl;
   }
+
   return alive;
 }
 
@@ -52,7 +56,7 @@ bool handlePacket(receivedPacket rp, int packetID, sockaddr_in src) {
         std::cout << "Coordinator still alive, staying connected." << std::endl;
         return true;
       } else {
-        std::cout << "Coordinator not found, retrying..." << std::endl;
+        std::cout << "Coordinator not found." << std::endl;
         return false;
       }
 
@@ -89,11 +93,9 @@ bool handlePacket(receivedPacket rp, int packetID, sockaddr_in src) {
         std::cout << "Transaction confirmed!" << std::endl;
         return true;
       } else {
-        std::cout << "Failed to confirm transaction, retrying..." << std::endl;
+        std::cout << "Failed to confirm transaction, please retry." << std::endl;
         return false;
       }
-      
-
 
     default:
       std::cout << "Unrecognised message from coordinator server. Packet type: " << rp.flag << std::endl;
@@ -101,13 +103,13 @@ bool handlePacket(receivedPacket rp, int packetID, sockaddr_in src) {
   }
 }
 
-bool receivePacket(int packetID) {
+bool receivePacket(int packetID, int wait) {
   try {
     std::cout << "Running: " << lockerSocket.port( ) << std::endl;
     struct sockaddr_in src;
     std::vector< unsigned char > data(32);
     // Note: Currently blocking
-    int numRead = lockerSocket.read( data, src );
+    int numRead = lockerSocket.read( data, src, wait);
     std::cout << "Read " << numRead << " bytes" << std::endl;
     std::string dataStr( data.begin( ), data.begin( ) + numRead );
     std::cout << "Message: " << dataStr << std::endl;
@@ -124,37 +126,35 @@ bool receivePacket(int packetID) {
 
 }
 
-void sendPacket(char type, char* bicycleID, int userID) {
+bool sendPacket(char type, char* bicycleID, int userID) {
   bool received = false;
-  while(!received) {
     try {
-      std::stringstream ss;
-      struct sockaddr_in dest;
-      dest.sin_addr.s_addr = inet_addr("127.0.0.1");
-      dest.sin_family = AF_INET;
-      dest.sin_port = htons(coordinatorPort);
-      short packetID = rand() % 8999 + 1000;
-      transactionPacket tp;
-      tp.packetID = htons(packetID);
-      tp.type = (unsigned) type;
-      strcpy((char*)tp.bicycleID, bicycleID);
-      tp.userID = htonl(userID);
-      std::cout << ntohs(tp.packetID) << " " << tp.type << " " << tp.bicycleID << " " << ntohl(tp.userID) << std::endl;
-      std::cout << tp.packetID << " " << tp.type << " " << tp.bicycleID << " " << tp.userID << std::endl;
-      
-      std::vector<unsigned char> data(sizeof(tp));
-      std::memcpy(data.data(), &tp, sizeof(tp));
-      ss << packetID << " " << " " << bicycleID;
-      std::cout << "Sending To: " << lockerSocket.port( ) << std::endl;
+    std::stringstream ss;
+    struct sockaddr_in dest;
+    dest.sin_addr.s_addr = inet_addr("127.0.0.1");
+    dest.sin_family = AF_INET;
+    dest.sin_port = htons(coordinatorPort);
+    short packetID = rand() % 8999 + 1000;
+    transactionPacket tp;
+    tp.packetID = htons(packetID);
+    tp.type = (unsigned) type;
+    strcpy((char*)tp.bicycleID, bicycleID);
+    tp.userID = htonl(userID);
+    std::cout << ntohs(tp.packetID) << " " << tp.type << " " << tp.bicycleID << " " << ntohl(tp.userID) << std::endl;
+    std::cout << tp.packetID << " " << tp.type << " " << tp.bicycleID << " " << tp.userID << std::endl;
+    
+    std::vector<unsigned char> data(sizeof(tp));
+    std::memcpy(data.data(), &tp, sizeof(tp));
+    ss << packetID << " " << " " << bicycleID;
+    std::cout << "Sending To: " << lockerSocket.port( ) << std::endl;
 
-      int numWrite = lockerSocket.write(data, dest);
-      std::cout << "Wrote " << numWrite << " bytes" << std::endl;
-      received = receivePacket(packetID);
-     } catch ( std::exception& ex ) {
+    int numWrite = lockerSocket.write(data, dest);
+    std::cout << "Wrote " << numWrite << " bytes" << std::endl;
+    received = receivePacket(packetID, WAIT_TRANSACTION);
+    } catch ( std::exception& ex ) {
       std::cout << "Failed" << std::endl;
     }
-  }
-  return;
+  return received;
 }
 
 void serverConnect() {
@@ -176,7 +176,7 @@ void serverConnect() {
       std::cout << "Sending To: " << lockerSocket.port( ) << std::endl;
       int numWrite = lockerSocket.write(data, dest);
       std::cout << "Wrote " << numWrite << " bytes" << std::endl;
-      received = receivePacket(packetID);
+      received = receivePacket(packetID, WAIT_SERVERCONNECT);
       } catch ( std::exception& ex ) {
         std::cout << "Failed" << std::endl;
       }
@@ -192,24 +192,78 @@ void printBicycles() {
 
 void removeBicycle(int locker, int userID) {
   char *bicycleID;
-  if(locker >= capacity || locker < 0 || strcmp(bicycles[locker], "Empty+")) {
+  std::cout << "Locker: " << locker << " Capactiy: " << capacity << std::endl;
+  if(locker >= capacity || locker < 0 || strcmp(bicycles[locker], "Empty") == 0) {
     std::cout << "Invalid locker number, couldn't remove bicycle." << std::endl;
     return;
   }
-  bicycleID = bicycles[locker];
-  bicycles[locker] = 0;
-  sendPacket('0', bicycleID, userID);
-  std::cout << "Bicycle " << bicycleID << " removed from locker " << locker << " by user: " << userID << std::endl;
+  if (sendPacket('0', bicycleID, userID)) {
+    std::cout << "Bicycle " << bicycleID << " removed from locker " << locker << " by user: " << userID << std::endl;
+    bicycleID = bicycles[locker];
+    std::string empty = "Empty";
+    bicycles[locker] = (char*) empty.c_str();
+  } else {
+    std::cout << "No response from coordinator server. Transaction couldn't be processed." << std::endl;
+  }
+  return;
 }
 
-void addBicycle(int locker, char *bicycleID, int userID) {
+void addBicycle(int locker, std::string bicycleID, int userID) {
   if(locker >= capacity || locker < 0 || bicycles[locker] != 0) {
     std::cout << "Invalid locker number, couldn't add bicycle." << std::endl;
     return;
   }
-  bicycles[locker] = bicycleID;
-  sendPacket('1', bicycleID, userID);
-  std::cout << "Bicycle " << bicycleID << " added to locker " << locker << " by user: " << userID << std::endl;
+  char *bicycleIDcstr = (char*) bicycleID.c_str();
+  if(sendPacket('1', bicycleIDcstr, userID)) {
+    bicycles[locker] = bicycleIDcstr;
+    std::cout << "Bicycle " << bicycleID << " added to locker " << locker << " by user: " << userID << std::endl;
+  } else {
+    std::cout << "No response from coordinator server. Transaction couldn't be processed." << std::endl;
+  }
+  return;
+}
+
+void handleStdin() {
+
+  int locker;
+  std::string bicycleID, input;
+  int userID;
+  int p;
+
+  std::cin >> input;
+  sscanf(input.c_str(), "%d", &p);
+
+  switch (p) {
+    case 3:
+      std::cout << "Terminating Locker Set" << std::endl;
+      std::cout << "---------------------------------------------" << std::endl;
+      for (int i=0; i<capacity; i++) {
+        free(bicycles[i]);
+      }
+      free(bicycles);
+      exit(EXIT_SUCCESS);
+
+    case 1:
+      std::cin >> input;
+      sscanf(input.c_str(), "%d", &locker);
+      std::cin >> bicycleID;
+      std::cin >> input;
+      sscanf(input.c_str(), "%d", &userID); 
+      addBicycle(locker, bicycleID, userID);
+      break;
+
+    case 2:
+      std::cin >> input;
+      sscanf(input.c_str(), "%d", &locker);
+      std::cin >> input;
+      sscanf(input.c_str(), "%d", &userID);
+      removeBicycle(locker, userID);
+      break;
+
+    default:
+      std::cout << "Error: Incorrect Format." << std::endl;
+      break;
+  }
 }
 
 
@@ -225,14 +279,33 @@ int main( int argc, char **argv ) {
     return 0;
   }
 
+  int epollfd = epoll_create(2);
+  if(epollfd < 0) {
+    std::cout << "Error in epoll_create()." << std::endl; 
+    return 0;
+  }
+
   std::string input;
   port = argv[1];
-
 
   input = argv[2];
   sscanf(input.c_str(), "%d", &coordinatorPort);
 
   lockerSocket = UDPSocket(port);
+  struct epoll_event evSock, evIn, events[2];
+  evSock.events = EPOLLIN;
+  evSock.data.fd = lockerSocket.fd();
+  if (epoll_ctl(epollfd, EPOLL_CTL_ADD, lockerSocket.fd(), &evSock) != 0) {
+    std::cout << "Error in epoll_ctl(), while adding socket." << std::endl; 
+    return 0;
+  }
+
+  evIn.events = EPOLLIN;
+  evIn.data.fd = 0;
+  if (epoll_ctl(epollfd, EPOLL_CTL_ADD, 0, &evIn) != 0) {
+    std::cout << "Error in epoll_ctl(), while adding stdin." << std::endl; 
+    return 0;
+  } 
 
   input = argv[3];
   sscanf(input.c_str(), "%d", &capacity);
@@ -267,10 +340,7 @@ int main( int argc, char **argv ) {
   std::cout << "---------------------------------------------" << std::endl;
   std::cout << "-------------Locker Initialised--------------" << std::endl;
 
-  int locker;
-  char* bicycleID;
-  int userID;
-  int p;
+  
 
   while(1) {    
     std::cout << "---------------------------------------------" << std::endl;
@@ -280,55 +350,19 @@ int main( int argc, char **argv ) {
     std::cout << "Remove Bicycle: 2 lockerNumber userID" << std::endl;
     std::cout << "Terminate Locker Set: 3" << std::endl;
     std::cout << "---------------------------------------------" << std::endl;
-    std::cin >> input;
-    sscanf(input.c_str(), "%d", &p);
 
-    switch (p) {
-      case 3:
-        std::cout << "Terminating Locker Set" << std::endl;
-        std::cout << "---------------------------------------------" << std::endl;
-        for (int i=0; i<capacity; i++) {
-          free(bicycles[i]);
-        }
-        free(bicycles);
-        return 1;
+    std::cout << "Epoll waiting..." << std::endl;
+    int evnts = epoll_wait(epollfd, events, 2, -1);
+    std::cout << "Ready on fd: " << events[0].data.fd << std::endl;
 
-      case 1:
-        std::cin >> input;
-        sscanf(input.c_str(), "%d", &locker);
-        std::cin >> bicycleID;
-        std::cin >> input;
-        sscanf(input.c_str(), "%d", &userID); 
-        addBicycle(locker, bicycleID, userID);
-        break;
-
-      case 2:
-        std::cin >> input;
-        sscanf(input.c_str(), "%d", &locker);
-        std::cin >> input;
-        sscanf(input.c_str(), "%d", &userID);
-        removeBicycle(locker, userID);
-        break;
-
-      default:
-        std::cout << "Error: Incorrect Format." << std::endl;
-        break;
+    for (int i=0; i<evnts; i++) {
+      if (events[i].data.fd == 0) {
+        handleStdin();
+      } else {
+        receivePacket(0, 1);
+      }
     }
-    
+
   }
 
-
-  try {
-    UDPSocket socket;
-    std::cout << "Running: " << socket.port( ) << std::endl;
-    struct sockaddr_in src;
-    std::vector< unsigned char > data( 100 );
-    // Note: Currently blocking
-    int numRead = socket.read( data, src );
-    std::cout << "Read " << numRead << " bytes" << std::endl;
-    std::string dataStr( data.begin( ), data.begin( ) + numRead );
-    std::cout << "Message: " << dataStr << std::endl;
-  } catch ( std::exception& ex ) {
-    std::cout << "Failed" << std::endl;
-  }
 }
