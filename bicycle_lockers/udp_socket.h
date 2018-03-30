@@ -15,7 +15,7 @@ public:
   int write( std::vector< unsigned char >& data, struct sockaddr_in &dstPacketDest );
   
   // Make sure the 'data' buffer is big enough
-  int read( std::vector< unsigned char >& data, struct sockaddr &dstPacketSrc );
+  int read( std::vector< unsigned char >& data, struct sockaddr_in &dstPacketSrc );
 private:
   int m_fd;
   int m_port;
