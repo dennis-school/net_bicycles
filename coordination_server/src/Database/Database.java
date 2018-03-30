@@ -10,7 +10,7 @@ import java.util.ArrayList;
 public class Database {
 
 	static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
-	static final String DB_URL = "jdbc:mysql://localhost:3306/Net_Bicycle";
+	static final String DB_URL = "jdbc:mysql://localhost:3306/database_test";
 
 	// Database credentials
 	static final String USER = "root";
@@ -25,16 +25,14 @@ public class Database {
 			Class.forName("com.mysql.jdbc.Driver");
 			conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			stmt = conn.createStatement();
+			//stmt.execute("SET FOREIGN_KEY_CHECKS=0;");
+			
 		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
-
-
 
 	/**
 	 * return locker_id by using its socket address
@@ -48,9 +46,11 @@ public class Database {
 		int locker_id = 0;
 		try {
 			rs = stmt.executeQuery(sql);
-			locker_id = rs.getInt("id");
+			if( rs.next() ) {
+				locker_id = rs.getInt("id");	
+			}
+			rs.close();
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return locker_id;
@@ -68,9 +68,10 @@ public class Database {
 		int coordinator_id = 0;
 		try {
 			rs = stmt.executeQuery(sql);
-			coordinator_id = rs.getInt("id");
+			if(rs.next())
+				coordinator_id = rs.getInt("id");
+			rs.close();
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return coordinator_id;
@@ -82,18 +83,7 @@ public class Database {
 	 * @return
 	 */
 	public ArrayList<SocketAddress> getLockers(SocketAddress coordinator_address) {
-		int port = ((InetSocketAddress)coordinator_address).getPort();
-		int coordinator_id = 0;
-		sql = "SELECT * FROM coordinator WHERE port = " + port + ";";
-		ResultSet rs;
-		try {
-			rs = stmt.executeQuery(sql);
-			coordinator_id = rs.getInt("coordinator_id");
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return getLockers( coordinator_id );
+		return getLockers( getCoordiantorId(coordinator_address) );
 	}
 	
 	/**
@@ -132,46 +122,51 @@ public class Database {
 	}
 
 	/**
-	 * return five closest coordinators around the coordinator with chosen id
+	 * return two closest coordinators around the coordinator with chosen id
 	 * @param id
 	 * @return
 	 * @throws SQLException
 	 * @throws UnknownHostException 
 	 */
-	@SuppressWarnings("null")
-	public ArrayList<SocketAddress> getNeighbours(int id) throws SQLException, UnknownHostException {
-		ArrayList<SocketAddress> coordinators = null;
-		int count = 0;
+	public ArrayList<SocketAddress> getNeighbours(int id) {
+		ArrayList<SocketAddress> coordinators = new ArrayList<SocketAddress>();
 		
-		sql = "DROP TABLE IF EXISTS v1;\r\n" + 
-				"DROP TABLE IF EXISTS v2;\r\n" + 
-				"\r\n" + 
-				"create table v1 as\r\n" + 
-				"select AVG(locker_set.location_longitude) as x, AVG(locker_set.location_latitude) as y, coordinator.ip as ip, coordinator.port as port, coordinator.id as id\r\n" + 
-				"from locker_set\r\n" + 
-				"LEFT JOIN coordinator ON locker_set.coordinator_id = coordinator.id\r\n" + 
-				"group by locker_set.coordinator_id;\r\n" + 
-				"\r\n" + 
-				"create table v2 as\r\n" + 
-				"select sqrt( power( x - (select v1.x from v1 where v1.id = " + id + "), 2) + power( y - (select v1.y from v1 where v1.id = " + id + "), 2) ) as diff, ip, port\r\n" + 
-				"from v1\r\n" + 
-				"order by diff;";
-		
-		stmt.executeUpdate(sql);
-		
-		sql = "select * from v2;";
-		ResultSet rs = stmt.executeQuery(sql);
-		
-		while (rs.next() && count < 2) {
-			count++;
-			InetAddress inetAddress = InetAddress.getByName( rs.getString("ip") );
-			int port = rs.getInt("port");
-
-			coordinators.add( new InetSocketAddress( inetAddress, port) );
+		try {
+			sql = "SELECT\r\n" + 
+					"  c1.*\r\n" + 
+					"FROM\r\n" + 
+					"  (SELECT\r\n" + 
+					"     c.id AS id,\r\n" + 
+					"     c.ip AS ip,\r\n" + 
+					"     c.port AS port,\r\n" + 
+					"     AVG(l.location_latitude) AS location_latitude,\r\n" + 
+					"     AVG(l.location_longitude) AS location_longitude\r\n" + 
+					"   FROM\r\n" + 
+					"     coordinator AS c\r\n" + 
+					"     JOIN locker_set AS l ON (l.coordinator_id = c.id)\r\n" + 
+					"   GROUP BY c.id) AS c1,\r\n" + 
+					"  coordinator AS c2\r\n" + 
+					"  JOIN locker_set AS l2 ON (l2.coordinator_id = c2.id)\r\n" + 
+					"WHERE\r\n" + 
+					"  c2.id = " + id + " AND\r\n" + 
+					"  c2.id <> c1.id\r\n" + 
+					"GROUP BY\r\n" + 
+					"  c1.id, c2.id\r\n" + 
+					"ORDER BY\r\n" + 
+					"  POW(c1.location_longitude-AVG(l2.location_longitude),2)+POW(c1.location_latitude-AVG(l2.location_latitude),2)\r\n" + 
+					"  DESC\r\n" + 
+					"LIMIT 2;";
+			ResultSet rs = stmt.executeQuery(sql);
+			
+			while ( rs.next() ) {
+				InetAddress inetAddress = InetAddress.getByName( rs.getString("ip") );
+				int port = rs.getInt("port");
+				coordinators.add( new InetSocketAddress( inetAddress, port) );
+			}
+			
+		} catch (SQLException | UnknownHostException e) {
+			e.printStackTrace();
 		}
-		
-		
-		
 		return coordinators;
 	}
 
@@ -182,10 +177,24 @@ public class Database {
 	 * @throws SQLException
 	 * @throws UnknownHostException
 	 */
-	public InetAddress getCoordinatorAddress(int id) throws SQLException, UnknownHostException {
+	public InetAddress getCoordinatorAddress(int id) {
 		sql = "SELECT ip FROM coordinator WHERE id = " + id + ";";
-		ResultSet rs = stmt.executeQuery(sql);
-		return InetAddress.getByName( rs.getString("ip") );
+		ResultSet rs;
+		InetAddress address = null;
+		try {
+			rs = stmt.executeQuery(sql);
+			if( rs.next() ) {
+				address = InetAddress.getByName( rs.getString("ip") );
+			}
+			rs.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return address;
 	}
 	
 	/**
@@ -195,10 +204,21 @@ public class Database {
 	 * @throws SQLException
 	 * @throws UnknownHostException
 	 */
-	public int getCoordiantorPort(int id) throws SQLException {
+	public int getCoordiantorPort(int id) {
 		sql = "SELECT port FROM coordinator WHERE id = " + id + ";";
-		ResultSet rs = stmt.executeQuery(sql);
-		return rs.getInt("port") ;
+		ResultSet rs;
+		int port = 0;
+		try {
+			rs = stmt.executeQuery(sql);
+			if( rs.next() ) {
+				port = rs.getInt("port") ;	
+			}
+			rs.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return port;
 	}
 
 	/**
@@ -216,23 +236,34 @@ public class Database {
 		String sql = null;
 		if( isRemoved == 0 ) {
 			//bike is taken
-			sql = "INSERT INTO transaction (bicycle_id, user_id, taken_locker) VALUES ( " + bicycle_id + ", " + user_id + ", " + locker_id + ");";
+			sql = "insert into transaction (bicycle_id, user_id, taken_locker, taken_timestamp)\r\n" + 
+					"values \r\n" + 
+					"(\"" + bicycle_id + "\", " + user_id +", " + locker_id + ", Now() );";
 		}else {
-			
+			sql = "update transaction set returned_locker = " + locker_id + ", returned_timestamp = NOW()\r\n" + 
+					"where bicycle_id = \"" + bicycle_id + "\" AND ISNULL(returned_timestamp);";
 		}
 		try {
 			stmt.executeUpdate(sql);
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	
-	public void closeDatabase() throws SQLException {
-		stmt.close();
-		conn.close();
+	public void closeDatabase() {
+		try {
+			stmt.close();
+			conn.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
 
+	/**
+	 * check whether the Locker with specified socketAddress is free
+	 * @param socketAddress
+	 * @return
+	 */
 	public boolean isFreeLocker(SocketAddress socketAddress) {
 		int port = ((InetSocketAddress)socketAddress).getPort();
 		sql = "SELECT * FROM locker_set WHERE port = " + port + ";";
@@ -240,17 +271,23 @@ public class Database {
 		Integer coordinator_id = null;
 		try {
 			rs = stmt.executeQuery(sql);
-			coordinator_id = rs.getInt("coordinator_id");
+			if( rs.next() )
+				coordinator_id = rs.getInt("coordinator_id");
+			rs.close();
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return coordinator_id == null;
 	}
 
+	/**
+	 * Change the coordinator_id in Locker with specified socketAddress
+	 * @param socketAddress
+	 * @param coordinator_id
+	 */
 	public void takeLocker(SocketAddress socketAddress, int coordinator_id) {
 		int port = ((InetSocketAddress)socketAddress).getPort();
-		sql = "update locker_set set coordinator_id = " + coordinator_id + " where port = " + port + ";";
+		sql = "UPDATE locker_set SET coordinator_id = " + coordinator_id + " WHERE port = " + port + ";";
 		try {
 			stmt.executeUpdate(sql);
 		} catch (SQLException e) {

@@ -9,6 +9,11 @@ import java.net.SocketAddress;
 import Packet.PacketResponse;
 import net_bicycles_coordination_server.Coordinator;
 
+/**
+ * packet byte[] 2 bytes type + 2 bytes coordinatorID
+ * @author Luigi
+ *
+ */
 public class PacketLifeCheckHandler implements PacketHandler {
 	private DatagramSocket socket;
 	
@@ -23,8 +28,8 @@ public class PacketLifeCheckHandler implements PacketHandler {
 	}
 	
 	@Override
-	public void handlePacket(ByteArrayInputStream bais, SocketAddress address, int packet_id) {
-		DatagramPacket packet = buildPacket( address, packet_id );
+	public void handlePacket(ByteArrayInputStream bais, SocketAddress coordinator_address, int packet_id) {
+		DatagramPacket packet = buildPacket( coordinator_address, packet_id );
 		try {
 			socket.send( packet );
 		} catch (IOException e) {

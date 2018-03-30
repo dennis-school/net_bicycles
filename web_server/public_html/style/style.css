@@ -1,0 +1,105 @@
+html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+body {
+  background-color: grey;
+  margin: 0;
+  padding: 0;
+}
+div.content {
+  background-color: white;
+  width: 1000pt;
+  height: 80vh;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 7vh;
+  padding: 20pt;
+  position: relative;
+}
+h1 {
+  margin: 0;
+  text-align: center;
+}
+div.inner {
+  display: table;
+  width: 100%;
+  margin-top: 20pt;
+}
+div.line {
+  display: table-row;
+}
+div.left {
+  display: table-cell;
+  vertical-align: top;
+  padding: 5pt;
+}
+div.right {
+  display: table-cell;
+  vertical-align: top;
+  width: 300pt;
+  padding: 5pt;
+}
+div#map {
+  width: 100%;
+  height: 100%;
+}
+th {
+  width: 1pt;
+  vertical-align: top;
+}
+#info {
+  border: 1px solid black;
+  padding: 10pt;
+  padding-top: 20pt;
+}
+
+#info.disabled {
+  border: 1px solid grey;
+  color: grey;
+}
+
+button#button-available, button#button-empty {
+  border: 1px solid black;
+  background-color: white;
+  padding-left: 40px;
+  padding-right: 40px;
+  padding-top: 7px;
+  padding-bottom: 7px;
+  cursor: pointer;
+}
+
+button#button-available {
+  border-radius: 2pt 0 0 2pt;
+}
+
+button#button-empty {
+  border-radius: 0 2pt 2pt 0;
+}
+
+button#button-available:disabled, button#button-empty:disabled {
+  background-color: black;
+  color: white;
+  background-image: url( '/images/selected.png' );
+  background-position: 7px 0px;
+  background-repeat: no-repeat;
+  background-size: auto 100%;
+}
+
+div#table-container table {
+  width: 300pt;
+  margin-top: 20pt;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+div#table-container table th {
+  text-align: left;
+}
+
+div#table-container table td.number {
+  text-align: right;
+  font-size: 13pt;
+  font-family: monospace;
+}

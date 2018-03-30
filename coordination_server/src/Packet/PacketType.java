@@ -11,13 +11,15 @@ public enum PacketType {
 	Packet_BICYCLE_TRANSECTION( 2 ),
 	Packet_CONNECTION_REQUEST( 3 ),
 	
-	// packet form coordinator to locker to accept/reject connection
-	// or packet form locker to coordinator to accept/reject replacement
+	// packet only form coordinator to locker to accept/reject connection
 	Packet_CONNECTION_ACCEPT( 4 ),
 	Packet_CONNECTION_REJICT( 5 ),
 	
 	// packet from coordinator to locker to replace coordinator
-	Packet_REPLACE_CONNECTION_REQUEST( 6 );
+	Packet_REPLACE_CONNECTION_REQUEST( 6 ),
+	
+	// packet from coordinator to locker to approve a transaction
+	Packet_Transaction_Approved( 7 );
 	
 	public final int id;
 	
