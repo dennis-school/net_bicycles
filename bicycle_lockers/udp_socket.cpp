@@ -7,6 +7,7 @@
 #include <cstring>
 #include <unistd.h>
 #include <vector>
+#include <ctime>
 #include <netdb.h>
 
 bool getLocalAddrinfo( struct addrinfo **ppDstAddrinfo, const char *portname ) {
@@ -80,11 +81,22 @@ int UDPSocket::port( ) const {
   return m_port;
 }
 
-int UDPSocket::read( std::vector< unsigned char >& data, struct sockaddr_in &dstPacketSrc ) {
+int UDPSocket::fd( ) const {
+  return m_fd;
+}
+
+int UDPSocket::read( std::vector< unsigned char >& data, struct sockaddr_in &dstPacketSrc, int wait) {
   socklen_t addrlen = sizeof( struct sockaddr );
-  // TODO: Use MSG_DONTWAIT after epoll() is setup
-  int numRead = recvfrom( m_fd, &data[0], data.size( ), 0, (struct sockaddr *) &dstPacketSrc, &addrlen );
-  //std::cout << "Read: " << numRead << std::endl;
+  time_t timer;
+  time(&timer);
+  int numRead = -1;
+  if (wait > 0) {
+    while ( (difftime(time(NULL), timer) < wait) && numRead==-1 ) {
+      numRead = recvfrom( m_fd, &data[0], data.size( ), MSG_DONTWAIT, (struct sockaddr *) &dstPacketSrc, &addrlen );
+    } 
+  } else {
+    numRead = recvfrom( m_fd, &data[0], data.size( ), 0, (struct sockaddr *) &dstPacketSrc, &addrlen );
+  }
   return numRead;
 }
 
