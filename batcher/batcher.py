@@ -89,6 +89,6 @@ class BatcherInterval:
         self.timer.start( )
 
 if __name__ == '__main__':
-    # Run the batcher eveyr 5 seconds, where it pushes a batch of binary
+    # Run the batcher every 5 seconds, where it pushes a batch of binary
     # data to RabbitMQ.
     interval = BatcherInterval( 5 )

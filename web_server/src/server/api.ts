@@ -67,18 +67,18 @@ class BicycleDatabase {
   }
 
   public getStatistics( ): Promise< any[] >;
-  public getStatistics( timestamp: number ): Promise< any[] >;
-  public getStatistics( timestamp: number, limit: number ): Promise< any[] >;
+  public getStatistics( limit: number ): Promise< any[] >;
+  public getStatistics( limit: number, timestamp: number ): Promise< any[] >;
 
-  public getStatistics( timestamp?: number, limit?: number ): Promise< Statistic[] > {
-    console.log( timestamp, limit );
+  public getStatistics( limit?: number, timestamp?: number ): Promise< Statistic[] > {
+    limit = limit ? Math.max( 0, Math.min( limit, 100 ) ) : 100;
+
     if ( typeof timestamp !== 'undefined' ) {
-      limit = limit ? Math.max( 0, Math.min( limit, 100 ) ) : 100;
       return this.preparedQuery( 'SELECT UNIX_TIMESTAMP(timestamp) AS timestamp,value FROM statistics WHERE timestamp >= ? ORDER BY timestamp LIMIT ?;', [ timestamp, limit ] ).then( results => {
         return results.map( r => new Statistic( r.timestamp, r.value ) );
       } );
     } else {
-      return this.query( 'SELECT timestamp,value FROM (SELECT UNIX_TIMESTAMP(timestamp) AS timestamp,value FROM statistics ORDER BY timestamp DESC LIMIT 100) AS s ORDER BY timestamp;' ).then( results => {
+      return this.preparedQuery( 'SELECT timestamp,value FROM (SELECT UNIX_TIMESTAMP(timestamp) AS timestamp,value FROM statistics ORDER BY timestamp DESC LIMIT ?) AS s ORDER BY timestamp;', [ limit ] ).then( results => {
         return results.map( r => new Statistic( r.timestamp, r.value ) );
       } );
     }
@@ -143,14 +143,14 @@ function setupAvailable( endpoint: string ): express.Router {
 function setupStatistics( endpoint: string ): express.Router {
   const router = express.Router( );
 
-  router.get( [ endpoint, endpoint + '/:timestamp', endpoint + '/:timestamp/:limit' ], ( req, res, next ) => {
-    let timestampStr: string = req.param( 'timestamp' );
+  router.get( [ endpoint, endpoint + '/:limit', endpoint + '/:timestamp/:limit' ], ( req, res, next ) => {
+    let timestampStr: string = req.params.timestamp;
     let timestamp: number = typeof timestampStr !== 'undefined' ? parseInt( <string> timestampStr ) : undefined;
 
-    let limitStr: string = req.param( 'limit' );
+    let limitStr: string = req.params.limit;
     let limit: number = typeof limitStr !== 'undefined' ? parseInt( <string> limitStr ) : undefined;
 
-    db.getStatistics( timestamp, limit ).then( locations => {
+    db.getStatistics( limit, timestamp ).then( locations => {
       res.contentType( 'application/json' );
       res.send( JSON.stringify( locations ) );
     } ).catch( ( ) => {
