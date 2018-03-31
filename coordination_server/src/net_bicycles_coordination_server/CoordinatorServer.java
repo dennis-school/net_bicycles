@@ -56,8 +56,8 @@ public class CoordinatorServer implements Runnable {
         ByteArrayInputStream bais = new ByteArrayInputStream(buf);
         
         // 2 bytes int
-        int type = ((bais.read()&0xFF)<<8) | (bais.read()&0xFF);
-        int packet_id = ((bais.read()&0xFF)<<8) | (bais.read()&0xFF);
+        int type = (bais.read()&0xFF) | ((bais.read()&0xFF)<<8);
+        int packet_id = (bais.read()&0xFF) | ((bais.read()&0xFF)<<8);
         
         PacketHandler packetHandler = packetHandlers.get( type );
         packetHandler.handlePacket( bais, address, packet_id );

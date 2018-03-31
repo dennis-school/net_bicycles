@@ -31,17 +31,17 @@ public abstract class Packet {
 	
 	public void write2ByteInt( int i ) {
 		byte[] buff = new byte[2];
-		buff[0] = (byte) ((i>>>8)&0xFF);
-		buff[1] = (byte) (i&0xFF);
+		buff[1] = (byte) ((i>>>8)&0xFF);
+		buff[0] = (byte) (i&0xFF);
 		baos.write( buff, 0, 2 );
 	}
 	
 	public void write4ByteInt( int i ) {
 		byte[] buff = new byte[4];
-		buff[0] = (byte) ((i>>>24)&0xFF);
-		buff[1] = (byte) ((i>>>16)&0xFF);
+		buff[4] = (byte) ((i>>>24)&0xFF);
+		buff[3] = (byte) ((i>>>16)&0xFF);
 		buff[2] = (byte) ((i>>>8)&0xFF);
-		buff[3] = (byte) (i&0xFF);
+		buff[1] = (byte) (i&0xFF);
 		baos.write( buff, 0, 4 );
 	}
 	
