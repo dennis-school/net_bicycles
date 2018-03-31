@@ -33,7 +33,12 @@ public class Test {
 		//System.out.println( InetAddress.getByName("localhost") );
 		
 		testSend();
-		testReceive();
+
+		//testReceive();
+		
+		//Coordinator c = new Coordinator();
+		
+		
 		
 	}
 	
@@ -89,48 +94,52 @@ public class Test {
 		System.out.println( socket2.getLocalAddress() + " " + socket2.getLocalPort() );
 	}
 	
-	private static void testSend() throws IOException {
+	private static void testSend( ) throws IOException {
 		byte[] buff = new byte[100];
 		
 		ByteArrayOutputStream baos = new ByteArrayOutputStream( );
 		// type 2 byte
-		buff[0] = (byte) ((PacketType.Packet_BICYCLE_TRANSECTION.id>>>8)&0xFF);
-		buff[1] = (byte) (PacketType.Packet_BICYCLE_TRANSECTION.id&0xFF);
+		buff[1] = (byte) ((PacketType.Packet_BICYCLE_TRANSECTION.id>>>8)&0xFF);
+		buff[0] = (byte) (PacketType.Packet_BICYCLE_TRANSECTION.id&0xFF);
 		baos.write( buff, 0, 2 );
 		// packet_id 2 bytes
-		baos.write( 4 );
+		buff[1] = (byte) ((4>>>8)&0xFF);
+		buff[0] = (byte) (4&0xFF);
+		baos.write( buff, 0, 2 );
 		// 1 byte
 		baos.write('1');
 		// 10 byte
 		baos.write( "TEIFUCVO85".getBytes() );
 		// 4 byte int
-		buff[0] = (byte) ((11001100>>>24)&0xFF);
-		buff[1] = (byte) ((11001100>>>16)&0xFF);
-		buff[2] = (byte) ((11001100>>>8)&0xFF);
-		buff[3] = (byte) (11001100&0xFF);
+		int i = 11001100;
+		buff[3] = (byte) ((i>>>24)&0xFF);
+		buff[2] = (byte) ((i>>>16)&0xFF);
+		buff[1] = (byte) ((i>>>8)&0xFF);
+		buff[0] = (byte) (i&0xFF);
 		baos.write( buff, 0, 4 );
 		byte[] p = baos.toByteArray();
-		
+
 		InetSocketAddress address = new InetSocketAddress( InetAddress.getLocalHost(), socket2.getLocalPort() );
 		
-		DatagramPacket packet = new DatagramPacket( p, p.length, address );
-		//DatagramPacket packet = new DatagramPacket( p, p.length, socket2.getLocalSocketAddress() );
+		DatagramPacket packet = new DatagramPacket( p, p.length, new InetSocketAddress( InetAddress.getByName("localhost"), 8100 ) );
+		//DatagramPacket packet = new DatagramPacket( p, p.length, address );
 		socket1.send( packet );
 		System.out.println("Socket1 send packet");
 	}
 	
-	private static void testReceive() throws IOException {
+	private static void testReceive( ) throws IOException {
 		byte[] buf = new byte[100];
 		DatagramPacket p = new DatagramPacket(buf, buf.length);
 		socket2.receive( p );
 		System.out.println("Socket2 receive the packet");
 		ByteArrayInputStream bais = new ByteArrayInputStream( buf );
 
-		int type = ((bais.read()&0xFF)<<8) | (bais.read()&0xFF);
+		
+		int type = (bais.read()&0xFF) | ((bais.read()&0xFF)<<8);
 		//int type = ((bais.read() << 8) & 0x0000ff00) | (bais.read() & 0x000000ff);
 		System.out.println( type );
 		
-		int packet_id = bais.read();
+		int packet_id = (bais.read()&0xFF) | ((bais.read()&0xFF)<<8);
 		System.out.println( packet_id );
 		
 		int isRemoved = bais.read() - '0';
@@ -144,8 +153,11 @@ public class Test {
 		}
 		System.out.println( bicycle_id );
 
-		int user_id = ((bais.read()&0xFF)<<24) | ((bais.read()&0xFF)<<16) | ((bais.read()&0xFF)<<8) | (bais.read()&0xFF);
+		//int user_id = ((bais.read()&0xFF)<<24) | ((bais.read()&0xFF)<<16) | ((bais.read()&0xFF)<<8) | (bais.read()&0xFF);
+		int user_id = (bais.read()&0xFF) | ((bais.read()&0xFF)<<8) | ((bais.read()&0xFF)<<16) | ((bais.read()&0xFF)<<24);
 		System.out.println( user_id );
+		
+		
 		
 	}
 	

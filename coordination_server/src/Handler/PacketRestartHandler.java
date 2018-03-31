@@ -15,6 +15,7 @@ public class PacketRestartHandler implements PacketHandler {
 	
 	@Override
 	public void handlePacket(ByteArrayInputStream bais, SocketAddress address, int pakcet_id) {
+		System.out.println( "Coordiantor" + coordinator.getId() + " going to restart" );
 		this.coordinator.restart();
 	}
 

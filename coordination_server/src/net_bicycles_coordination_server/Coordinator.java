@@ -33,6 +33,7 @@ public class Coordinator {
 	
 	private DatagramSocket socket;
 	private SocketAddress address;
+	private int port;
 	
 	// Locker that send packet
 	private ArrayList<SocketAddress> listeningLockers;
@@ -54,6 +55,8 @@ public class Coordinator {
 	public Coordinator() {
 		try {
 			this.socket = new DatagramSocket();
+			this.address = socket.getLocalSocketAddress();
+			this.port = socket.getLocalPort();
 		} catch (SocketException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -217,6 +220,10 @@ public class Coordinator {
 	
 	public boolean inWaitingList( SocketAddress locker ) {
 		return this.waitingLockers.contains( locker );
+	}
+	
+	public int getPort() {
+		return this.port;
 	}
 	
 }

@@ -267,6 +267,26 @@ public class Database {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+		
+		// insert new bike
+		sql = "select * from transaction where bicycle_id = \"" + bicycle_id + "\" ;";
+		ResultSet rs;
+		try {
+			
+			rs = stmt.executeQuery(sql);
+			if( !rs.next() ) {
+				sql = "insert into bicycle (id, current_locker) values (\"" + bicycle_id + "\", " + locker_id + ");";
+				stmt.executeUpdate(sql);
+				System.out.println( "Info: New Bike " + bicycle_id + " is added!" );
+			}
+			rs.close();
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
 	}
 	
 	public void closeDatabase() {
