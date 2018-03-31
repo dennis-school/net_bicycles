@@ -27,6 +27,8 @@ public class PacketLockerTransHandler implements PacketHandler {
 
 	@Override
 	public void handlePacket(ByteArrayInputStream bais, SocketAddress address, int packetID) {
+		
+		
 		int type = ((bais.read()&0xFF)<<8) | (bais.read()&0xFF);
 		int packet_id = ((bais.read()&0xFF)<<8) | (bais.read()&0xFF);
 		int isRemoved = bais.read() - '0';
@@ -37,6 +39,9 @@ public class PacketLockerTransHandler implements PacketHandler {
 			count++;
 		}
 		int user_id = ((bais.read()&0xFF)<<24) | ((bais.read()&0xFF)<<16) | ((bais.read()&0xFF)<<8) | (bais.read()&0xFF);
+		
+		System.out.println( "Coordiantor" + coordinator.getId() + " receive a transaction: bike " + bicycle_id + (isRemoved == 0 ? " remove":" return") + " by " + user_id );
+		
 		this.coordinator.insertBicycleTransection(isRemoved, bicycle_id, user_id, address );
 		
 	}
