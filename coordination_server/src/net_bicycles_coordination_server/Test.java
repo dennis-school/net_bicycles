@@ -35,6 +35,11 @@ public class Test {
 		testSend();
 		testReceive();
 		
+		//Coordinator c = new Coordinator();
+		
+		//testSend( new InetSocketAddress( InetAddress.getByName("localhost"), 8100 ) );
+		
+		
 	}
 	
 	private static void init() throws SocketException, UnknownHostException {
@@ -89,7 +94,7 @@ public class Test {
 		System.out.println( socket2.getLocalAddress() + " " + socket2.getLocalPort() );
 	}
 	
-	private static void testSend() throws IOException {
+	private static void testSend( ) throws IOException {
 		byte[] buff = new byte[100];
 		
 		ByteArrayOutputStream baos = new ByteArrayOutputStream( );
@@ -110,7 +115,7 @@ public class Test {
 		buff[3] = (byte) (11001100&0xFF);
 		baos.write( buff, 0, 4 );
 		byte[] p = baos.toByteArray();
-		
+
 		InetSocketAddress address = new InetSocketAddress( InetAddress.getLocalHost(), socket2.getLocalPort() );
 		
 		DatagramPacket packet = new DatagramPacket( p, p.length, address );
@@ -119,7 +124,7 @@ public class Test {
 		System.out.println("Socket1 send packet");
 	}
 	
-	private static void testReceive() throws IOException {
+	private static void testReceive( ) throws IOException {
 		byte[] buf = new byte[100];
 		DatagramPacket p = new DatagramPacket(buf, buf.length);
 		socket2.receive( p );

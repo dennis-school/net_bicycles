@@ -29,8 +29,8 @@ public class PacketLockerTransHandler implements PacketHandler {
 	public void handlePacket(ByteArrayInputStream bais, SocketAddress address, int packetID) {
 		
 		
-		int type = ((bais.read()&0xFF)<<8) | (bais.read()&0xFF);
-		int packet_id = ((bais.read()&0xFF)<<8) | (bais.read()&0xFF);
+		//int type = ((bais.read()&0xFF)<<8) | (bais.read()&0xFF);
+		//int packet_id = ((bais.read()&0xFF)<<8) | (bais.read()&0xFF);
 		int isRemoved = bais.read() - '0';
 		int count = 0;
 		String bicycle_id = null;

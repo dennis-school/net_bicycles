@@ -48,6 +48,8 @@ public class CoordinatorServer implements Runnable {
 		
 		DatagramPacket packetDatagram = new DatagramPacket(buf, buf.length);
 		socket.receive(packetDatagram);
+		
+		System.out.println( " receive!" );
 
         SocketAddress address = packetDatagram.getSocketAddress();
         
