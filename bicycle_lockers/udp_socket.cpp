@@ -102,6 +102,8 @@ int UDPSocket::read( std::vector< unsigned char >& data, struct sockaddr_in &dst
 
 int UDPSocket::write( std::vector< unsigned char >& data, struct sockaddr_in &dstPacketDest ) {
   socklen_t addrlen = sizeof( struct sockaddr_in );
+  dstPacketDest.sin_addr.s_addr = inet_addr("127.0.0.1");
+  dstPacketDest.sin_family = AF_INET;
   int numWrite = sendto( m_fd, &data[0], data.size(), 0, (struct sockaddr *) &dstPacketDest, addrlen);
   return numWrite;
 
