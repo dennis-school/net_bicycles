@@ -5,6 +5,11 @@ import java.net.SocketAddress;
 
 import net_bicycles_coordination_server.*;
 
+/**
+ * reset the timer for life checker of coordinator with specified socket address
+ * @author Luigi
+ *
+ */
 public class PacketResponseHandler implements PacketHandler {
 
 	private Coordinator coordinator;

@@ -7,11 +7,13 @@ public enum PacketType {
 	// packet from coordinator to coordinator/locker to response
 	Packet_RESPONSE( 1 ),
 	
-	// two packets only from locker
+	// packets contain transaction from locker to coordinator
 	Packet_BICYCLE_TRANSECTION( 2 ),
+	
+	// packet from locker to coordinator for connection request
 	Packet_CONNECTION_REQUEST( 3 ),
 	
-	// packet only form coordinator to locker to accept/reject connection
+	// packet form coordinator to locker to accept/reject connection
 	Packet_CONNECTION_ACCEPT( 4 ),
 	Packet_CONNECTION_REJICT( 5 ),
 	
@@ -21,7 +23,7 @@ public enum PacketType {
 	// packet from coordinator to locker to approve a transaction
 	Packet_Transaction_Approved( 7 ),
 	
-	// pakcet form coordinator to locker/coordinator to restart
+	// packet form coordinator to locker/coordinator to restart
 	Packet_Restart( 8 );
 	
 	public final int id;

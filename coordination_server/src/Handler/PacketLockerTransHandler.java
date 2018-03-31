@@ -14,6 +14,8 @@ import net_bicycles_coordination_server.Coordinator;
  * 	1 byte char for taken/removed
  * 	10 byte char for bicycle_id
  * 	4 byte int for user_id
+ * 
+ * extract information from input and save it as transaction into database
  * @author Luigi
  *
  */

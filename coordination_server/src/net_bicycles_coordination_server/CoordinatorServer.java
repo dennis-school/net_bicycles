@@ -22,6 +22,7 @@ public class CoordinatorServer implements Runnable {
 	private Coordinator coordinator;
 	private DatagramSocket socket;
 	
+	// hash map with packet's type and packet's handler
 	private HashMap<Integer, PacketHandler> packetHandlers;
 	
 	public CoordinatorServer(Coordinator coordinator) {
@@ -42,7 +43,11 @@ public class CoordinatorServer implements Runnable {
 		this.packetHandlers.put( PacketType.Packet_Restart.id, new PacketRestartHandler(this.coordinator) );
 	}
 
-	// handle a unknown type package
+	/**
+	 *  receive a unknown type package and give it to correct packet handler depending on its packet type
+	 * @throws IOException
+	 * @throws ClassNotFoundException
+	 */
 	private void handlePacket() throws IOException, ClassNotFoundException {
 		byte[] buf = new byte[1000];
 		
@@ -55,7 +60,7 @@ public class CoordinatorServer implements Runnable {
         
         ByteArrayInputStream bais = new ByteArrayInputStream(buf);
         
-        // 2 bytes int
+        // read 2 bytes int
         int type = (bais.read()&0xFF) | ((bais.read()&0xFF)<<8);
         int packet_id = (bais.read()&0xFF) | ((bais.read()&0xFF)<<8);
         

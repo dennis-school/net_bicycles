@@ -8,9 +8,10 @@ import Database.Database;
 
 /**
  * Main for running one Coordinator with input id
- * 
- * cmd: java -cp .; first jar ; second jar net_bicycles_coordinator_server.Main coordinator_id]
- * Where jar file is in folder coordinator_server
+ * run cmd at directory \net_bicycles\coordination_server\bin
+ * cmd: java -cp .; first jar ; second jar net_bicycles_coordinator_server.Main coordinator_id
+ * Two jar file is in folder coordinator_server
+ * coordinator_id is a integer which in database, currently we only have 1,2,3,4,5
  * 
  * @author Luigi
  *

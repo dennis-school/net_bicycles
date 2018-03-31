@@ -26,6 +26,11 @@ public class PacketConnectionRequestHandler implements PacketHandler {
 		this.socket = coordinator.getDatagramSocket();
 	}
 	
+	/**
+	 * accept the connection if the locker is free in database
+	 * accept the connection if the locker is in waiting list
+	 * reject otherwise
+	 */
 	@Override
 	public void handlePacket(ByteArrayInputStream bais, SocketAddress locker_address, int packet_id) {
 		byte[] fullPacket = null;

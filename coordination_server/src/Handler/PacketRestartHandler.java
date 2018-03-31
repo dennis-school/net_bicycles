@@ -4,7 +4,11 @@ import java.io.ByteArrayInputStream;
 import java.net.SocketAddress;
 
 import net_bicycles_coordination_server.Coordinator;
-
+/**
+ * restart the coordinator itself
+ * @author Luigi
+ *
+ */
 public class PacketRestartHandler implements PacketHandler {
 
 	private Coordinator coordinator;

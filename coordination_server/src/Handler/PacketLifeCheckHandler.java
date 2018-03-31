@@ -10,7 +10,7 @@ import Packet.PacketResponse;
 import net_bicycles_coordination_server.Coordinator;
 
 /**
- * packet byte[] 2 bytes type + 2 bytes coordinatorID
+ * send a Response packet to the socket address indicates the life
  * @author Luigi
  *
  */

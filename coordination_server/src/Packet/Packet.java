@@ -1,9 +1,12 @@
 package Packet;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-
+/**
+ * Packet use for communication between lockers/coordinators
+ * @author Luigi
+ *
+ */
 public abstract class Packet {
 	protected PacketType type;
 	protected ByteArrayOutputStream baos;
@@ -48,7 +51,6 @@ public abstract class Packet {
 	
 	/**
 	 * Creates a binary representation of the payload of the packet
-	 * Does not include any packet metadata.
 	 * 
 	 * @return
 	 */

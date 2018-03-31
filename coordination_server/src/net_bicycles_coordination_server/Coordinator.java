@@ -31,25 +31,30 @@ public class Coordinator {
 	// id of Coordinator in Database
 	private int coordinator_id;
 	
+	// socket
 	private DatagramSocket socket;
 	private SocketAddress address;
 	private int port;
 	
-	// Locker that send packet
+	// Locker that currently send packet
 	private ArrayList<SocketAddress> listeningLockers;
 	
-	// Locker that may send packet in furture
+	// Locker that may send packet in future
 	private ArrayList<SocketAddress> waitingLockers;
 	
-	// two closest coordinators around it
 	private ActionListener aliveTimerListener;
 	private Timer aliveTimer;
+
+	// two closest coordinators around it
 	private ArrayList<SocketAddress> neighbours;
+	
+	// two thread that check neighbours' life
 	private HashMap<SocketAddress, LifeChecker> lifeCheckers;
 	
+	// server handler packets
 	CoordinatorServer server;
 	
-	// use for store and extract info from net_bicycle Database
+	// database that store info
 	private Database database;
 	
 	public Coordinator() {
@@ -76,7 +81,9 @@ public class Coordinator {
 		Thread t = new Thread( server );
 		t.start();
 
+		// check whether the system is already started
 		if( this.database.noFreeLocker() ) {
+			// if the system is started, restart the system for new incoming coordiantor
 			restartWholeSystem();
 		}else {
 			initChecker();
@@ -84,22 +91,26 @@ public class Coordinator {
 		
 	}
 	
-	private void initChecker() {
-		this.aliveTimerListener = ( ev -> {
-			this.aliveTimer.stop();
-			this.neighbours = database.getNeighbours( this.coordinator_id );
-			System.out.println( "Coordinator" + coordinator_id + " try to find neighbours");
-			
-			// threads for each neighbour to check their status
-			this.lifeCheckers = new HashMap<SocketAddress, LifeChecker>();
-			createLifeChecker();
-		} );
-		this.aliveTimer = new Timer( 10000, aliveTimerListener );
-		this.aliveTimer.start();
+	/**
+	 * get ip and port from Database using coordinator's id and create socketAddress from them
+	 * @param id
+	 * @throws UnknownHostException
+	 * @throws SQLException
+	 */
+	private void createUDPSocket(int id) {
+		this.address = new InetSocketAddress( database.getCoordinatorAddress(id), database.getCoordiantorPort(id) );
+		try {
+			this.socket = new DatagramSocket( address );
+			this.address = this.socket.getLocalSocketAddress();
+			this.port = this.socket.getLocalPort();
+		} catch (SocketException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	/**
-	 * restart all coordinators and all lockers
+	 * restart all coordinators and all lockers in the system
 	 */
 	private void restartWholeSystem() {
 		ArrayList<SocketAddress> allAddress = this.database.getAllAddress();
@@ -120,15 +131,25 @@ public class Coordinator {
 	}
 	
 	/**
-	 * restart coordinator itself
+	 *  create a timer, wait for locker to connect to coordinator
 	 */
-	public void restart() {
-		this.listeningLockers.clear();
-		this.waitingLockers.clear();
-		initChecker();
+	private void initChecker() {
+		this.aliveTimerListener = ( ev -> {
+			this.aliveTimer.stop();
+			this.neighbours = database.getNeighbours( this.coordinator_id );
+			System.out.println( "Coordinator" + coordinator_id + " try to find neighbours");
+			
+			// threads for each neighbours to check their status
+			this.lifeCheckers = new HashMap<SocketAddress, LifeChecker>();
+			createLifeChecker();
+		} );
+		this.aliveTimer = new Timer( 10000, aliveTimerListener );
+		this.aliveTimer.start();
 	}
-
-	// check life status for surrounding coordinators
+	
+	/**
+	 *  check life checker for all surrounding coordinators
+	 */
 	private void createLifeChecker() {
 		for( SocketAddress address:neighbours ) {
 			LifeChecker checker = new LifeChecker( address, this );
@@ -136,6 +157,15 @@ public class Coordinator {
 			Thread t = new Thread( checker );
 			t.start();
 		}
+	}
+	
+	/**
+	 * restart coordinator itself
+	 */
+	public void restart() {
+		this.listeningLockers.clear();
+		this.waitingLockers.clear();
+		initChecker();
 	}
 
 	public synchronized void removeCoordinator( SocketAddress coordinator ) {
@@ -155,21 +185,7 @@ public class Coordinator {
 		this.waitingLockers.remove( locker );
 	}
 	
-	/**
-	 * get ip and port from Database using coordinator's id and create socketAddress from them
-	 * @param id
-	 * @throws UnknownHostException
-	 * @throws SQLException
-	 */
-	private void createUDPSocket(int id) {
-		this.address = new InetSocketAddress( database.getCoordinatorAddress(id), database.getCoordiantorPort(id) );
-		try {
-			this.socket = new DatagramSocket( address );
-		} catch (SocketException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+	
 	
 	public int getId() {
 		return this.coordinator_id;
@@ -183,28 +199,52 @@ public class Coordinator {
 		return this.address;
 	}
 	
+	public int getPort() {
+		return this.port;
+	}
+	
+	/**
+	 * whether the locker with specified address is in the waiting list
+	 * @param locker
+	 * @return
+	 */
+	public boolean inWaitingList( SocketAddress locker ) {
+		return this.waitingLockers.contains( locker );
+	}
+	
+	/**
+	 * get the life checker of a coordinator with specified socket address of that coordinator
+	 * @param address
+	 * @return
+	 */
 	public LifeChecker getLifeChecker( SocketAddress address ) {
 		return this.lifeCheckers.get(address);
 	}
 	
 	/**
-	 * Check whether the locker with locker_address is free, take it if it is free
+	 * whether the locker with specified socket address is free
 	 * @param locker_address
 	 * @return
 	 */
 	public boolean isFreeLocker( SocketAddress locker_address ) {
 		boolean isFree = database.isFreeLocker( locker_address );
-		
 		return isFree;
 	}
 	
+	/**
+	 * insert transaction of a bicycle into database
+	 * @param isRemoved
+	 * @param bicycle_id
+	 * @param user_id
+	 * @param locker_address
+	 */
 	public void insertBicycleTransection(int isRemoved, String bicycle_id, int user_id, SocketAddress locker_address){
 		int locker_id = this.database.getLockerId(locker_address);
 		this.database.insertBicycleTransection( isRemoved, bicycle_id, user_id, locker_id);
 	}
 	
 	/**
-	 * try to take over lockers from a Coordinator with coordinator_address
+	 * notified the death of coordinator to all lockers from that coordinator with specified socket address
 	 * @param coordinator_address
 	 */
 	public void takeLockers(SocketAddress coordinator_address) {
@@ -216,14 +256,6 @@ public class Coordinator {
 		Thread t = new Thread( requester );
 		t.start();
 		
-	}
-	
-	public boolean inWaitingList( SocketAddress locker ) {
-		return this.waitingLockers.contains( locker );
-	}
-	
-	public int getPort() {
-		return this.port;
 	}
 	
 }

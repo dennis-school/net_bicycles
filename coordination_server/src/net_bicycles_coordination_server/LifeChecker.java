@@ -9,6 +9,12 @@ import javax.swing.Timer;
 
 import Packet.PacketLifeCheck;
 
+/**
+ * Periodically send signal packet to socket address.
+ * If time excess 5s, it decide the death of coordinator at that socket address.
+ * @author Luigi
+ *
+ */
 public class LifeChecker implements Runnable {
 	private Coordinator coordinator;
 	private SocketAddress socketAddress;
@@ -31,12 +37,13 @@ public class LifeChecker implements Runnable {
 		this.aliveTimer.start();
 	}
 	
+	/**
+	 * send death signal to all lockers of coordinator at socketAddress
+	 */
 	public void takeOverLockers( ) {
 		this.coordinator.takeLockers( socketAddress );
 	}
 	
-
-
 	private DatagramPacket buildPacket( ) {
 		PacketLifeCheck packet = new PacketLifeCheck();
 		byte[] fullPacket = packet.toBinary( coordinator.getId() );
