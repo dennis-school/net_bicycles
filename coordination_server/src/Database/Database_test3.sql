@@ -1,4 +1,5 @@
 SET SQL_SAFE_UPDATES = 0;
+SET FOREIGN_KEY_CHECKS = 0;
 
 use database_test;
 
@@ -72,4 +73,7 @@ UNION
 SELECT ip, port 
 FROM coordinator;
 */
-update locker_set set coordinator_id = null;
+-- update locker_set set coordinator_id = null;
+
+-- insert into bicycle (id, current_locker) values ( "HelloWorld", 1);
+select * from transaction where bicycle_id = "AAITBACZ8";
