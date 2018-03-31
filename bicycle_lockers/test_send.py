@@ -7,8 +7,8 @@ def int_to_bytes(val, num_bytes):
 
 
 UDP_IP = "127.0.0.1"
-UDP_PORT = 35677 # Change this for the particular server port
-MESSAGE = 4234
+UDP_PORT = 8000 # Change this for the particular server port
+MESSAGE = 8532
 FLAG = 4
 
 print("UDP target IP:", UDP_IP)

@@ -10,7 +10,7 @@
 #include "locker_packets.h"
 
 #define WAIT_TRANSACTION 3
-#define WAIT_SERVERCONNECT 0
+#define WAIT_SERVERCONNECT 30
 #define WAIT_LIFESIGNAL 5 
 
 const char *port = "37777";
@@ -29,15 +29,13 @@ bool sendLifeCheckPacket() {
   try {
     std::stringstream ss;
     struct sockaddr_in dest;
-    dest.sin_addr.s_addr = inet_addr("127.0.0.1");
-    dest.sin_family = AF_INET;
     dest.sin_port = htons(coordinatorPort);
     short packetID = rand() % 8999 + 1000;
     lifeCheckPacket lcp;
     lcp.packetID = htons(packetID);
     std::vector<unsigned char> data(sizeof(lcp));
     std::memcpy(data.data(), &lcp, sizeof(lcp));
-    std::cout << "Sending life check to : " << lockerSocket.port( ) << std::endl;
+    std::cout << "Sending life check to : " << coordinatorPort << std::endl;
     int numWrite = lockerSocket.write(data, dest);
     std::cout << "Wrote " << numWrite << " bytes" << std::endl;
     alive = receivePacket(packetID, WAIT_LIFESIGNAL);
@@ -97,7 +95,7 @@ bool handlePacket(receivedPacket rp, int packetID, sockaddr_in src) {
         return false;
       }
 
-    case 8:
+    case 8: //reset connection to original coordinator
       coordinatorPort = initialPort;
       serverConnect();
       return true;
@@ -136,8 +134,6 @@ bool sendPacket(char type, char* bicycleID, int userID) {
     try {
     std::stringstream ss;
     struct sockaddr_in dest;
-    dest.sin_addr.s_addr = inet_addr("127.0.0.1");
-    dest.sin_family = AF_INET;
     dest.sin_port = htons(coordinatorPort);
     short packetID = rand() % 8999 + 1000;
     transactionPacket tp;
@@ -169,8 +165,6 @@ void serverConnect() {
       std::cout << "Trying connection to server..." << std::endl;
       struct sockaddr_in dest;
       dest.sin_port = htons(coordinatorPort);
-      dest.sin_addr.s_addr = inet_addr("127.0.0.1");
-      dest.sin_family = AF_INET;
       short packetID = rand() % 8999 + 1000;
       std::cout << packetID << std::endl;
       connectionPacket cp;
@@ -178,7 +172,7 @@ void serverConnect() {
       std::cout << cp.flag << " " << cp.packetID << std::endl;
       std::vector<unsigned char> data(sizeof(cp));
       std::memcpy(data.data(), &cp, sizeof(cp));
-      std::cout << "Sending To: " << lockerSocket.port( ) << std::endl;
+      std::cout << "Sending To: " << coordinatorPort << std::endl;
       int numWrite = lockerSocket.write(data, dest);
       std::cout << "Wrote " << numWrite << " bytes" << std::endl;
       received = receivePacket(packetID, WAIT_SERVERCONNECT);
