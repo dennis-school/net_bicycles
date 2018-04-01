@@ -16,13 +16,13 @@ public class BEInputStream {
 		return data[0] & 0xFF;
 	}
 
-	public int readUint32( ) throws IOException {
+	public int readUint16( ) throws IOException {
 		byte[] data = new byte[2];
 		ensureRead( data, 0, 2 );
 		return ( (data[0]&0xFF) << 8 ) | (data[1]&0xFF);
 	}
 	
-	public int readUint16( ) throws IOException {
+	public int readUint32( ) throws IOException {
 		byte[] data = new byte[4];
 		ensureRead( data, 0, 4 );
 		return ( (data[0]&0xFF) << 24 ) | ( (data[1]&0xFF) << 16 ) | ( (data[2]&0xFF) << 8 ) | (data[3]&0xFF);

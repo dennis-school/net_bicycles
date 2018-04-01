@@ -3,10 +3,10 @@ import subprocess
 import random
 
 class Locker:
-  def __init__(self,port,capacity):
+  def __init__(self,port,coordPort,capacity):
     self._port = port
     # TODO: Perhaps pipe the stdout as well, after everything works
-    self._process = subprocess.Popen( [ "../a.out", str(port), str(capacity), *( "0" for i in range(capacity) ) ], stdin=subprocess.PIPE )
+    self._process = subprocess.Popen( [ "../a.out", str(port), str(coordPort), str(capacity), *( "Empty" for i in range(capacity) ) ], stdin=subprocess.PIPE, stdout=subprocess.PIPE )
     self._slots = [ None for i in range( capacity ) ]
 
   def hasEmptySlot( self ):
@@ -24,8 +24,9 @@ class Locker:
     randIndex = random.randint(0,len(indices)-1)
     id = self._slots[indices[randIndex]]
     self._slots[indices[randIndex]] = None
+    print( '[Locker %04d] Took bicycle %s from slot %d' % ( self._port, id, indices[ randIndex ] ) )
     self._process.stdin.write( bytes( '2 %d 1\n' % indices[ randIndex ], 'utf8' ) )
-    print( '[Locker %04d] Took bicycle %s from slot %d' % ( self._port, id, indices[ randIndex ] ) );
+    self._process.stdin.flush( )
     return id
 
   def placeBicycle( self, id ):
@@ -34,8 +35,9 @@ class Locker:
     assert len(indices) > 0
     randIndex = random.randint(0,len(indices)-1)
     self._slots[ indices[ randIndex ] ] = id
+    print( '[Locker %04d] Placed bicycle %s in slot %d' % ( self._port, id, indices[ randIndex ] ) )
     self._process.stdin.write( bytes( '1 %d %s 1\n' % ( indices[ randIndex ], id ), 'utf8' ) )
-    print( '[Locker %04d] Placed bicycle %s in slot %d' % ( self._port, id, indices[ randIndex ] ) );
+    self._process.stdin.flush( )
 
 if __name__ == '__main__':
   with open('bicycles.txt') as f:
@@ -46,8 +48,10 @@ if __name__ == '__main__':
     lockerDescs = [x.strip( ).split( ' ' ) for x in f.readlines() if len(x.strip().split(' ')) == 2]
     lockerDescs = list((int(a),int(b)) for (a,b) in lockerDescs)
   
-  lockers = [ Locker(l[0], l[1]) for l in lockerDescs ]
+  lockers = [ Locker(l[0], 8100, l[1]) for l in lockerDescs ]
   takenBicycles = bicycles[:]
+
+  time.sleep( 1 )
 
   while True:
     # Either place a random bike, or take one.

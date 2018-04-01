@@ -15,7 +15,7 @@
 
 const char *port = "37777";
 int capacity;
-char **bicycles;
+std::vector<std::string> bicycles;
 int coordinatorPort, initialPort;
 int backupCoordinator;
 UDPSocket lockerSocket;
@@ -129,7 +129,7 @@ bool receivePacket(int packetID, int wait) {
 
 }
 
-bool sendPacket(char type, char* bicycleID, int userID) {
+bool sendPacket(char type, const char* bicycleID, int userID) {
   bool received = false;
     try {
     std::stringstream ss;
@@ -173,6 +173,9 @@ void serverConnect() {
       std::vector<unsigned char> data(sizeof(cp));
       std::memcpy(data.data(), &cp, sizeof(cp));
       std::cout << "Sending To: " << coordinatorPort << std::endl;
+      for ( int i = 0; i < sizeof( connectionPacket ); i++ ) {
+          std::cout << (int) data[i] << std::endl;
+      }
       int numWrite = lockerSocket.write(data, dest);
       std::cout << "Wrote " << numWrite << " bytes" << std::endl;
       received = receivePacket(packetID, WAIT_SERVERCONNECT);
@@ -190,13 +193,13 @@ void printBicycles() {
 }
 
 void removeBicycle(int locker, int userID) {
-  char *bicycleID;
+  std::string bicycleID;
   std::cout << "Locker: " << locker << " Capactiy: " << capacity << std::endl;
-  if(locker >= capacity || locker < 0 || strcmp(bicycles[locker], "Empty") == 0) {
+  if(locker >= capacity || locker < 0 || bicycles[locker] == "Empty") {
     std::cout << "Invalid locker number, couldn't remove bicycle." << std::endl;
     return;
   }
-  if (sendPacket('0', bicycleID, userID)) {
+  if (sendPacket('0', bicycleID.c_str( ), userID)) {
     std::cout << "Bicycle " << bicycleID << " removed from locker " << locker << " by user: " << userID << std::endl;
     bicycleID = bicycles[locker];
     std::string empty = "Empty";
@@ -208,7 +211,7 @@ void removeBicycle(int locker, int userID) {
 }
 
 void addBicycle(int locker, std::string bicycleID, int userID) {
-  if(locker >= capacity || locker < 0 || strcmp(bicycles[locker], "Empty") != 0 ) {
+  if(locker >= capacity || locker < 0 || bicycles[locker] != "Empty" ) {
     std::cout << "Invalid locker number, couldn't add bicycle." << std::endl;
     return;
   }
@@ -236,11 +239,11 @@ void handleStdin() {
     case 3:
       std::cout << "Terminating Locker Set" << std::endl;
       std::cout << "---------------------------------------------" << std::endl;
-      for (int i=0; i<capacity; i++) {
+      /*for (int i=0; i<capacity; i++) {
         std::cout << "Freeing " << i << std::endl;
         free(bicycles[i]);
       }
-      free(bicycles);
+      free(bicycles);*/
       exit(EXIT_SUCCESS);
 
     case 1:
@@ -311,11 +314,7 @@ int main( int argc, char **argv ) {
   input = argv[3];
   sscanf(input.c_str(), "%d", &capacity);
 
-  bicycles = (char**) malloc(capacity*sizeof(char*));
-  
-  for (int i=0; i<capacity; i++) {
-    bicycles[i] = (char*) malloc(10*sizeof(char));
-  }
+  bicycles = std::vector< std::string >( capacity );
 
   srand(time(NULL));
 

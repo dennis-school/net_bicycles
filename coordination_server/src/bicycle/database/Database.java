@@ -209,7 +209,7 @@ public class Database {
 					"LIMIT 2;";
 			PreparedStatement stmt = conn.prepareStatement( sql );
 			stmt.setInt( 1, id );
-			ResultSet rs = stmt.executeQuery(sql);
+			ResultSet rs = stmt.executeQuery( );
 			
 			while ( rs.next() ) {
 				InetAddress inetAddress = InetAddress.getByName( rs.getString("ip") );
@@ -328,7 +328,7 @@ public class Database {
 		try {
 			PreparedStatement stmt = conn.prepareStatement( sql );
 			stmt.setInt(1, port);
-			rs = stmt.executeQuery(sql);
+			rs = stmt.executeQuery( );
 			if( rs.next() )
 				coordinator_id = rs.getInt("coordinator_id");
 			rs.close();
@@ -418,7 +418,7 @@ public class Database {
 				stmt.setString( 1, bicycle_id );
 				stmt.setInt( 2, user_id );
 				stmt.setInt( 3, locker_id );
-				stmt.executeQuery( );
+				stmt.executeUpdate( );
 				stmt.close( );
 			}else {
 				String sql = "update transaction set returned_locker = ?, returned_timestamp = NOW()\r\n" + 
@@ -426,23 +426,23 @@ public class Database {
 				PreparedStatement stmt = conn.prepareStatement( sql );
 				stmt.setInt( 1, locker_id );
 				stmt.setString( 2, bicycle_id );
-				stmt.executeQuery( );
+				stmt.executeUpdate( );
 				stmt.close( );
 			}
 			
-			// insert new bike
+			// insert locker bike
 			String sql = "select * from transaction where bicycle_id = ?;";
 			PreparedStatement stmt = conn.prepareStatement( sql );
 			stmt.setString( 1, bicycle_id );
 			ResultSet rs = stmt.executeQuery( );
 			if( !rs.next() ) {
-				String innerSql = "insert into bicycle (id, current_locker) values (?,?);";
+				String innerSql = "UPDATE bicycle SET current_locker = ? WHERE id = ?;";
 				PreparedStatement innerStmt = conn.prepareStatement(innerSql);
-				innerStmt.setString(1, bicycle_id);
-				innerStmt.setInt(2, locker_id);
+				innerStmt.setInt(1, locker_id);
+				innerStmt.setString(2, bicycle_id);
 				innerStmt.executeUpdate( );
 				innerStmt.close( );
-				System.out.println( "Info: New Bike " + bicycle_id + " is added!" );
+				System.out.println( "Info: Locker is added for bike " + bicycle_id + " is added!" );
 			}
 			rs.close();
 			stmt.close( );
