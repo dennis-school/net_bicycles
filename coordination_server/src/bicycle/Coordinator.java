@@ -223,14 +223,14 @@ public class Coordinator {
 	
 	/**
 	 * insert transaction of a bicycle into database
-	 * @param isRemoved
+	 * @param isTaken
 	 * @param bicycle_id
 	 * @param user_id
 	 * @param locker_address
 	 */
-	public void insertBicycleTransection(int isRemoved, String bicycle_id, int user_id, SocketAddress locker_address){
+	public void insertBicycleTransection( boolean isTaken, String bicycle_id, int user_id, SocketAddress locker_address){
 		int locker_id = this.database.getLockerId(locker_address);
-		this.database.insertBicycleTransection( isRemoved, bicycle_id, user_id, locker_id);
+		this.database.insertBicycleTransection( isTaken, bicycle_id, user_id, locker_id);
 	}
 	
 	/**

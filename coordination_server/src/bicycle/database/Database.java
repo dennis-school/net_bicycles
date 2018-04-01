@@ -407,12 +407,12 @@ public class Database {
 	 * @throws SQLException
 	 * @throws UnknownHostException
 	 */
-	public void insertBicycleTransection(int isRemoved, String bicycle_id, int user_id, int locker_id) {
+	public void insertBicycleTransection( boolean isTaken, String bicycle_id, int user_id, int locker_id) {
 		try {
-			if( isRemoved == 0 ) {
+			if( isTaken ) { // A bike is taken
 				//bike is taken
-				String sql = "insert into transaction (bicycle_id, user_id, taken_locker, taken_timestamp)\r\n" + 
-						"values \r\n" + 
+				String sql = "INSERT INTO transaction (bicycle_id, user_id, taken_locker, taken_timestamp)" + 
+						" values " + 
 						"(?, ?, ?, NOW() );";
 				PreparedStatement stmt = conn.prepareStatement( sql );
 				stmt.setString( 1, bicycle_id );
@@ -420,32 +420,30 @@ public class Database {
 				stmt.setInt( 3, locker_id );
 				stmt.executeUpdate( );
 				stmt.close( );
-			}else {
-				String sql = "update transaction set returned_locker = ?, returned_timestamp = NOW()\r\n" + 
-						"where bicycle_id = ? AND ISNULL(returned_timestamp);";
+
+			    // insert locker bike
+			    sql = "UPDATE bicycle SET current_locker = NULL WHERE id = ?;";
+			    stmt = conn.prepareStatement( sql );
+			    stmt.setString(1, bicycle_id);
+			    stmt.executeUpdate( );
+			    stmt.close( );
+			}else { // A bike is returned
+				String sql = "UPDATE transaction SET returned_locker = ?, returned_timestamp = NOW() " + 
+						     "WHERE bicycle_id = ? AND ISNULL(returned_timestamp);";
 				PreparedStatement stmt = conn.prepareStatement( sql );
 				stmt.setInt( 1, locker_id );
 				stmt.setString( 2, bicycle_id );
 				stmt.executeUpdate( );
 				stmt.close( );
-			}
 			
-			// insert locker bike
-			String sql = "select * from transaction where bicycle_id = ?;";
-			PreparedStatement stmt = conn.prepareStatement( sql );
-			stmt.setString( 1, bicycle_id );
-			ResultSet rs = stmt.executeQuery( );
-			if( !rs.next() ) {
-				String innerSql = "UPDATE bicycle SET current_locker = ? WHERE id = ?;";
-				PreparedStatement innerStmt = conn.prepareStatement(innerSql);
-				innerStmt.setInt(1, locker_id);
-				innerStmt.setString(2, bicycle_id);
-				innerStmt.executeUpdate( );
-				innerStmt.close( );
-				System.out.println( "Info: Locker is added for bike " + bicycle_id + " is added!" );
+			    // insert locker bike
+			    sql = "UPDATE bicycle SET current_locker = ? WHERE id = ?;";
+			    stmt = conn.prepareStatement( sql );
+			    stmt.setInt(1, locker_id);
+			    stmt.setString(2, bicycle_id);
+			    stmt.executeUpdate( );
+			    stmt.close( );
 			}
-			rs.close();
-			stmt.close( );
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

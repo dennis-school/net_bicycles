@@ -199,11 +199,9 @@ void removeBicycle(int locker, int userID) {
     std::cout << "Invalid locker number, couldn't remove bicycle." << std::endl;
     return;
   }
-  if (sendPacket('0', bicycleID.c_str( ), userID)) {
+  if (sendPacket(0, bicycles[locker].c_str( ), userID)) {
     std::cout << "Bicycle " << bicycleID << " removed from locker " << locker << " by user: " << userID << std::endl;
-    bicycleID = bicycles[locker];
-    std::string empty = "Empty";
-    bicycles[locker] = (char*) empty.c_str();
+    bicycles[locker] = "Empty";
   } else {
     std::cout << "No response from coordinator server. Transaction couldn't be processed." << std::endl;
   }
@@ -216,7 +214,7 @@ void addBicycle(int locker, std::string bicycleID, int userID) {
     return;
   }
   char *bicycleIDcstr = (char*) bicycleID.c_str();
-  if(sendPacket('1', bicycleIDcstr, userID)) {
+  if(sendPacket(1, bicycleIDcstr, userID)) {
     bicycles[locker] = bicycleIDcstr;
     std::cout << "Bicycle " << bicycleID << " added to locker " << locker << " by user: " << userID << std::endl;
   } else {
