@@ -75,7 +75,9 @@ public class Coordinator {
 		this.waitingLockers = new ArrayList<SocketAddress>();
 		
 		createUDPSocket( this.coordinator_id );
-		
+
+		System.out.println( "Running at port: " + this.port );
+
 		// create and start server to handle incoming packets
 		this.server = new CoordinatorServer( this );
 		Thread t = new Thread( server );
