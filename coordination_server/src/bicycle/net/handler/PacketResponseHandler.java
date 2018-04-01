@@ -1,9 +1,10 @@
-package Handler;
+package bicycle.net.handler;
 
-import java.io.ByteArrayInputStream;
 import java.net.SocketAddress;
 
-import net_bicycles_coordination_server.*;
+import bicycle.Coordinator;
+import bicycle.LifeChecker;
+import bicycle.io.BEInputStream;
 
 /**
  * reset the timer for life checker of coordinator with specified socket address
@@ -19,7 +20,7 @@ public class PacketResponseHandler implements PacketHandler {
 	}
 	
 	@Override
-	public void handlePacket(ByteArrayInputStream bais, SocketAddress address, int packet_id) {
+	public void handlePacket(BEInputStream in, SocketAddress address, int packet_id) {
 		LifeChecker checker = this.coordinator.getLifeChecker( address );
 		checker.alive();
 	}

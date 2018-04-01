@@ -1,9 +1,9 @@
-package Packet;
+package bicycle.net.packet;
 
 public class PacketResponse extends Packet {
 
 	public PacketResponse( ) {
-		this.type = PacketType.Packet_RESPONSE;
+		this.type = PacketType.RESPONSE;
 	}
 	
 }

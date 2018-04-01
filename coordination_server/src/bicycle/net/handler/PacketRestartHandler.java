@@ -1,9 +1,9 @@
-package Handler;
+package bicycle.net.handler;
 
-import java.io.ByteArrayInputStream;
 import java.net.SocketAddress;
 
-import net_bicycles_coordination_server.Coordinator;
+import bicycle.Coordinator;
+import bicycle.io.BEInputStream;
 /**
  * restart the coordinator itself
  * @author Luigi
@@ -18,7 +18,7 @@ public class PacketRestartHandler implements PacketHandler {
 	}
 	
 	@Override
-	public void handlePacket(ByteArrayInputStream bais, SocketAddress address, int pakcet_id) {
+	public void handlePacket(BEInputStream in, SocketAddress address, int packet_id) {
 		System.out.println( "Coordiantor" + coordinator.getId() + " going to restart" );
 		this.coordinator.restart();
 	}

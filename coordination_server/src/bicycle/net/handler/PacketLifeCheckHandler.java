@@ -1,13 +1,13 @@
-package Handler;
+package bicycle.net.handler;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketAddress;
 
-import Packet.PacketResponse;
-import net_bicycles_coordination_server.Coordinator;
+import bicycle.Coordinator;
+import bicycle.io.BEInputStream;
+import bicycle.net.packet.PacketResponse;
 
 /**
  * send a Response packet to the socket address indicates the life
@@ -28,8 +28,8 @@ public class PacketLifeCheckHandler implements PacketHandler {
 	}
 	
 	@Override
-	public void handlePacket(ByteArrayInputStream bais, SocketAddress coordinator_address, int packet_id) {
-		DatagramPacket packet = buildPacket( coordinator_address, packet_id );
+	public void handlePacket( BEInputStream in, SocketAddress coordinatorAddress, int packet_id) {
+		DatagramPacket packet = buildPacket( coordinatorAddress, packet_id );
 		try {
 			socket.send( packet );
 		} catch (IOException e) {

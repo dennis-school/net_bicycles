@@ -1,4 +1,4 @@
-package net_bicycles_coordination_server;
+package bicycle;
 
 import java.awt.event.ActionListener;
 import java.io.ByteArrayInputStream;
@@ -8,14 +8,12 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.HashMap;
 
 import javax.swing.Timer;
 
-import Packet.PacketType;
+import bicycle.net.packet.PacketType;
 
 // test
 
@@ -62,7 +60,7 @@ public class Test {
 		
 	}
 	
-	private static void testLifeChecker() throws IOException {
+	/*private static void testLifeChecker() throws IOException {
 		
 		Coordinator coordinator = new Coordinator();
 		InetSocketAddress address = new InetSocketAddress( InetAddress.getLocalHost(), socket2.getLocalPort() );
@@ -73,7 +71,7 @@ public class Test {
 		
 		testLifeReceive();
 		
-	}
+	}*/
 
 	private static void testLifeReceive() throws IOException {
 		byte[] buf = new byte[100];
@@ -84,7 +82,7 @@ public class Test {
 
 
 	private static void testPacketType() {
-		if( PacketType.PACKET_LIFE_CHECK.id == 0 )
+		if( PacketType.LIFE_CHECK.id == 0 )
 			System.out.println("PacketType is int");
 	}
 	
@@ -99,8 +97,8 @@ public class Test {
 		
 		ByteArrayOutputStream baos = new ByteArrayOutputStream( );
 		// type 2 byte
-		buff[1] = (byte) ((PacketType.Packet_BICYCLE_TRANSECTION.id>>>8)&0xFF);
-		buff[0] = (byte) (PacketType.Packet_BICYCLE_TRANSECTION.id&0xFF);
+		buff[1] = (byte) ((PacketType.BICYCLE_TRANSECTION.id>>>8)&0xFF);
+		buff[0] = (byte) (PacketType.BICYCLE_TRANSECTION.id&0xFF);
 		baos.write( buff, 0, 2 );
 		// packet_id 2 bytes
 		buff[1] = (byte) ((4>>>8)&0xFF);

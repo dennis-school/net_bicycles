@@ -1,8 +1,8 @@
-package Packet;
+package bicycle.net.packet;
 
 public class PacketConnectionReject extends Packet {
 
 	public PacketConnectionReject() {
-		this.type = PacketType.Packet_CONNECTION_REJICT;
+		this.type = PacketType.CONNECTION_REJECT;
 	}
 }

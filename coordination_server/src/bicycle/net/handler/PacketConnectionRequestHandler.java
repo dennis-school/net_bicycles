@@ -1,13 +1,14 @@
-package Handler;
+package bicycle.net.handler;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketAddress;
 
-import Packet.*;
-import net_bicycles_coordination_server.Coordinator;
+import bicycle.Coordinator;
+import bicycle.io.BEInputStream;
+import bicycle.net.packet.PacketConnectionAccept;
+import bicycle.net.packet.PacketConnectionReject;
 
 /** 
  * handle connection packet from locker
@@ -32,22 +33,22 @@ public class PacketConnectionRequestHandler implements PacketHandler {
 	 * reject otherwise
 	 */
 	@Override
-	public void handlePacket(ByteArrayInputStream bais, SocketAddress locker_address, int packet_id) {
+	public void handlePacket( BEInputStream in, SocketAddress lockerAddress, int packet_id) {
 		byte[] fullPacket = null;
 		
-		System.out.println("Coordinator" + coordinator.getId() + " receive connection request from Locker at " + locker_address );
+		System.out.println("Coordinator" + coordinator.getId() + " receive connection request from Locker at " + lockerAddress );
 		
-		if( coordinator.isFreeLocker( locker_address ) ) {
+		if( coordinator.isFreeLocker( lockerAddress ) ) {
 			
-			coordinator.addListeningLockers( locker_address );
+			coordinator.addListeningLockers( lockerAddress );
 			PacketConnectionAccept packet = new PacketConnectionAccept();
 			fullPacket = packet.toBinary( packet_id );
 			
 		}else {
-			if( this.coordinator.inWaitingList( locker_address ) ){
+			if( this.coordinator.inWaitingList( lockerAddress ) ){
 				// handle lockers of dead coordinator
-				this.coordinator.removeWaitingLockers( locker_address );
-				this.coordinator.addListeningLockers( locker_address );
+				this.coordinator.removeWaitingLockers( lockerAddress );
+				this.coordinator.addListeningLockers( lockerAddress );
 				PacketConnectionAccept packet = new PacketConnectionAccept();
 				fullPacket = packet.toBinary( packet_id );
 			}else {
@@ -55,7 +56,7 @@ public class PacketConnectionRequestHandler implements PacketHandler {
 				fullPacket = packet.toBinary( packet_id );
 			}
 		}
-		DatagramPacket datapacket = new DatagramPacket( fullPacket, fullPacket.length, locker_address);
+		DatagramPacket datapacket = new DatagramPacket( fullPacket, fullPacket.length, lockerAddress);
 		
 		try {
 			socket.send( datapacket );

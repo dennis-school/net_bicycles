@@ -1,9 +1,9 @@
-package Packet;
+package bicycle.net.packet;
 
 public class PacketRestart extends Packet {
 
 		public PacketRestart( ) {
-			this.type = PacketType.Packet_Restart;
+			this.type = PacketType.RESTART;
 		}
 		
 }

@@ -1,4 +1,4 @@
-package net_bicycles_coordination_server;
+package bicycle;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -6,7 +6,7 @@ import java.net.DatagramSocket;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 
-import Packet.PacketReplaceConnectionRequest;
+import bicycle.net.packet.PacketReplaceConnectionRequest;
 
 /**
  * Tell locker the death of coordinator

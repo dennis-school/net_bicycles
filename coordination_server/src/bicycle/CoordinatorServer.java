@@ -1,4 +1,4 @@
-package net_bicycles_coordination_server;
+package bicycle;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -7,8 +7,9 @@ import java.net.DatagramSocket;
 import java.net.SocketAddress;
 import java.util.HashMap;
 
-import Handler.*;
-import Packet.*;
+import bicycle.io.BEInputStream;
+import bicycle.net.handler.*;
+import bicycle.net.packet.*;
 
 /**
  * handle all kinds of packet from lockers and coordinators
@@ -34,13 +35,13 @@ public class CoordinatorServer implements Runnable {
 	}
 
 	private void buildPacketHandlers() {
-		this.packetHandlers.put( PacketType.PACKET_LIFE_CHECK.id, new PacketLifeCheckHandler(this.coordinator) );
-		this.packetHandlers.put( PacketType.Packet_RESPONSE.id, new PacketResponseHandler(this.coordinator) );
-		this.packetHandlers.put( PacketType.Packet_BICYCLE_TRANSECTION.id, new PacketLockerTransHandler(this.coordinator) );
-		this.packetHandlers.put( PacketType.Packet_CONNECTION_REQUEST.id, new PacketConnectionRequestHandler(this.coordinator) );
-		this.packetHandlers.put( PacketType.Packet_CONNECTION_ACCEPT.id, new PacketConnectionAcceptHandler(this.coordinator) );
-		this.packetHandlers.put( PacketType.Packet_CONNECTION_REJICT.id, new PacketConnectionRejectHandler(this.coordinator) );
-		this.packetHandlers.put( PacketType.Packet_Restart.id, new PacketRestartHandler(this.coordinator) );
+		this.packetHandlers.put( PacketType.LIFE_CHECK.id, new PacketLifeCheckHandler(this.coordinator) );
+		this.packetHandlers.put( PacketType.RESPONSE.id, new PacketResponseHandler(this.coordinator) );
+		this.packetHandlers.put( PacketType.BICYCLE_TRANSECTION.id, new PacketLockerTransHandler(this.coordinator) );
+		this.packetHandlers.put( PacketType.CONNECTION_REQUEST.id, new PacketConnectionRequestHandler(this.coordinator) );
+		this.packetHandlers.put( PacketType.CONNECTION_ACCEPT.id, new PacketConnectionAcceptHandler(this.coordinator) );
+		this.packetHandlers.put( PacketType.CONNECTION_REJECT.id, new PacketConnectionRejectHandler(this.coordinator) );
+		this.packetHandlers.put( PacketType.RESTART.id, new PacketRestartHandler(this.coordinator) );
 	}
 
 	/**
@@ -54,18 +55,23 @@ public class CoordinatorServer implements Runnable {
 		DatagramPacket packetDatagram = new DatagramPacket(buf, buf.length);
 		socket.receive(packetDatagram);
 		
-		System.out.println( " receive!" );
+		System.out.println( "Received a packet!" );
 
         SocketAddress address = packetDatagram.getSocketAddress();
         
         ByteArrayInputStream bais = new ByteArrayInputStream(buf);
+        BEInputStream beIn = new BEInputStream( bais );
         
         // read 2 bytes int
-        int type = (bais.read()&0xFF) | ((bais.read()&0xFF)<<8);
-        int packet_id = (bais.read()&0xFF) | ((bais.read()&0xFF)<<8);
+        int type = beIn.readUint16( );
+        int packet_id = beIn.readUint16( );
         
-        PacketHandler packetHandler = packetHandlers.get( type );
-        packetHandler.handlePacket( bais, address, packet_id );
+        if ( !packetHandlers.containsKey( type ) ) {
+        	System.out.printf( "Packet handler for packet type %d not found\n", type );
+        } else {
+            PacketHandler packetHandler = packetHandlers.get( type );
+            packetHandler.handlePacket( beIn, address, packet_id );
+        }
 	}
 	
 	@Override
@@ -76,11 +82,7 @@ public class CoordinatorServer implements Runnable {
 
 			try {
 				handlePacket();
-			} catch (ClassNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
+			} catch (ClassNotFoundException | IOException e) {
 				e.printStackTrace();
 			}
 			

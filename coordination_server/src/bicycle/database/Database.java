@@ -1,4 +1,4 @@
-package Database;
+package bicycle.database;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -15,23 +15,36 @@ import java.util.ArrayList;
 public class Database {
 
 	static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
-	static final String DB_URL = "jdbc:mysql://localhost:3306/database_test";
+	static final String DB_URL = "jdbc:mysql://localhost:3306/bicycle";
 
 	// Database credentials
 	static final String USER = "root";
-	static final String PASS = "12345678";
+	static final String PASS = null;
 
 	Connection conn = null;
-	Statement stmt = null;
-	String sql;
 
-	public Database() {
+	public static class Credentials {
+		public final String host;
+		public final int port;
+		public final String database;
+		public final String username;
+		public final String password;
+		
+		public Credentials( String host, int port, String database, String username, String password ) {
+			this.host = host;
+			this.port = port;
+			this.database = database;
+			this.username = username;
+			this.password = password;
+		}
+	}
+	
+	public Database( Credentials credentials ) {
 		try {
 			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager.getConnection(DB_URL, USER, PASS);
-			stmt = conn.createStatement();
+			String url = String.format( "jdbc:mysql://%s:%d/%s", credentials.host, credentials.port, credentials.database );
+			conn = DriverManager.getConnection( url, credentials.username, credentials.password );
 			//stmt.execute("SET FOREIGN_KEY_CHECKS=0;");
-			
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
@@ -46,15 +59,18 @@ public class Database {
 	 */
 	public int getLockerId(SocketAddress locker_address) {
 		int port = ((InetSocketAddress)locker_address).getPort();
-		sql = "SELECT * FROM locker_set WHERE port = " + port + ";";
+		String sql = "SELECT * FROM locker_set WHERE port = ?;";
 		ResultSet rs;
 		int locker_id = 0;
 		try {
-			rs = stmt.executeQuery(sql);
+			PreparedStatement stmt = conn.prepareStatement( sql );
+			stmt.setInt( 1, port );
+			rs = stmt.executeQuery();
 			if( rs.next() ) {
 				locker_id = rs.getInt("id");	
 			}
 			rs.close();
+			stmt.close( );
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -68,14 +84,17 @@ public class Database {
 	 */
 	public int getCoordiantorId(SocketAddress coordinator_address) {
 		int port = ((InetSocketAddress)coordinator_address).getPort();
-		sql = "SELECT * FROM coordinator WHERE port = " + port + ";";
+		String sql = "SELECT * FROM coordinator WHERE port = ?;";
 		ResultSet rs;
 		int coordinator_id = 0;
 		try {
-			rs = stmt.executeQuery(sql);
+			PreparedStatement stmt = conn.prepareStatement( sql );
+			stmt.setInt(1, port);
+			rs = stmt.executeQuery();
 			if(rs.next())
 				coordinator_id = rs.getInt("id");
 			rs.close();
+			stmt.close( );
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -88,16 +107,16 @@ public class Database {
 	 */
 	public ArrayList<Integer> getCoordinators(){
 		ArrayList<Integer> coordinators = new ArrayList<Integer>();
-		sql = "SELECT * FROM coordinator;";
-		
-		ResultSet rs;
+		String sql = "SELECT * FROM coordinator;";
 		
 		try {
-			rs = stmt.executeQuery(sql);
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(sql);
 			while( rs.next() ) {
 				coordinators.add( rs.getInt("id"));
 			}
 			rs.close();
+			stmt.close();
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -122,7 +141,7 @@ public class Database {
 	 * @throws UnknownHostException
 	 */
 	public ArrayList<SocketAddress> getLockers(int id){
-		sql = "SELECT * FROM locker_set WHERE Coordinator_id = " + id + ";";
+		String sql = "SELECT * FROM locker_set WHERE Coordinator_id = ?;";
 		
 		ResultSet rs;
 		InetAddress inetAddress;
@@ -131,13 +150,17 @@ public class Database {
 		ArrayList<SocketAddress> lockers = new ArrayList<SocketAddress>();
 		
 		try {
-			rs = stmt.executeQuery(sql);
+			PreparedStatement stmt = conn.prepareStatement( sql );
+			stmt.setInt( 1, id );
+			rs = stmt.executeQuery();
 			while( rs.next() ) {
 				inetAddress = InetAddress.getByName(rs.getString("ip"));
 				port = rs.getInt("port");
 				socketAddress = new InetSocketAddress( inetAddress, port );
 				lockers.add( socketAddress );
 			}
+			rs.close( );
+			stmt.close( );
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -160,7 +183,7 @@ public class Database {
 		ArrayList<SocketAddress> coordinators = new ArrayList<SocketAddress>();
 		
 		try {
-			sql = "SELECT\r\n" + 
+			String sql = "SELECT\r\n" + 
 					"  c1.*\r\n" + 
 					"FROM\r\n" + 
 					"  (SELECT\r\n" + 
@@ -176,7 +199,7 @@ public class Database {
 					"  coordinator AS c2\r\n" + 
 					"  JOIN locker_set AS l2 ON (l2.coordinator_id = c2.id)\r\n" + 
 					"WHERE\r\n" + 
-					"  c2.id = " + id + " AND\r\n" + 
+					"  c2.id = ? AND\r\n" + 
 					"  c2.id <> c1.id\r\n" + 
 					"GROUP BY\r\n" + 
 					"  c1.id, c2.id\r\n" + 
@@ -184,6 +207,8 @@ public class Database {
 					"  POW(c1.location_longitude-AVG(l2.location_longitude),2)+POW(c1.location_latitude-AVG(l2.location_latitude),2)\r\n" + 
 					"  DESC\r\n" + 
 					"LIMIT 2;";
+			PreparedStatement stmt = conn.prepareStatement( sql );
+			stmt.setInt( 1, id );
 			ResultSet rs = stmt.executeQuery(sql);
 			
 			while ( rs.next() ) {
@@ -191,7 +216,8 @@ public class Database {
 				int port = rs.getInt("port");
 				coordinators.add( new InetSocketAddress( inetAddress, port) );
 			}
-			
+			rs.close( );
+			stmt.close( );
 		} catch (SQLException | UnknownHostException e) {
 			e.printStackTrace();
 		}
@@ -206,15 +232,18 @@ public class Database {
 	 * @throws UnknownHostException
 	 */
 	public InetAddress getCoordinatorAddress(int id) {
-		sql = "SELECT ip FROM coordinator WHERE id = " + id + ";";
+		String sql = "SELECT ip FROM coordinator WHERE id = ?;";
 		ResultSet rs;
 		InetAddress address = null;
 		try {
-			rs = stmt.executeQuery(sql);
+			PreparedStatement stmt = conn.prepareStatement( sql );
+			stmt.setInt( 1, id );
+			rs = stmt.executeQuery( );
 			if( rs.next() ) {
 				address = InetAddress.getByName( rs.getString("ip") );
 			}
 			rs.close();
+			stmt.close( );
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -233,15 +262,18 @@ public class Database {
 	 * @throws UnknownHostException
 	 */
 	public int getCoordiantorPort(int id) {
-		sql = "SELECT port FROM coordinator WHERE id = " + id + ";";
+		String sql = "SELECT port FROM coordinator WHERE id = ?;";
 		ResultSet rs;
 		int port = 0;
 		try {
-			rs = stmt.executeQuery(sql);
+			PreparedStatement stmt = conn.prepareStatement( sql );
+			stmt.setInt( 1, id );
+			rs = stmt.executeQuery( );
 			if( rs.next() ) {
 				port = rs.getInt("port") ;	
 			}
 			rs.close();
+			stmt.close();
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -260,12 +292,13 @@ public class Database {
 		int port;
 		InetSocketAddress socketAddress;
 		
-		sql = "SELECT ip, port\r\n" + 
+		String sql = "SELECT ip, port\r\n" + 
 				"FROM locker_set \r\n" + 
 				"UNION\r\n" + 
 				"SELECT ip, port \r\n" + 
 				"FROM coordinator;";
 		try {
+			Statement stmt = conn.createStatement( );
 			rs = stmt.executeQuery(sql);
 			while( rs.next() ) {
 				inetAddress = InetAddress.getByName(rs.getString("ip"));
@@ -274,6 +307,7 @@ public class Database {
 				addresses.add( socketAddress );
 			}
 			rs.close();
+			stmt.close();
 		} catch (SQLException | UnknownHostException e) {
 			e.printStackTrace();
 		}
@@ -288,14 +322,17 @@ public class Database {
 	 */
 	public boolean isFreeLocker(SocketAddress socketAddress) {
 		int port = ((InetSocketAddress)socketAddress).getPort();
-		sql = "SELECT * FROM locker_set WHERE port = " + port + ";";
+		String sql = "SELECT * FROM locker_set WHERE port = ?;";
 		ResultSet rs;
 		Integer coordinator_id = null;
 		try {
+			PreparedStatement stmt = conn.prepareStatement( sql );
+			stmt.setInt(1, port);
 			rs = stmt.executeQuery(sql);
 			if( rs.next() )
 				coordinator_id = rs.getInt("coordinator_id");
 			rs.close();
+			stmt.close( );
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -307,9 +344,10 @@ public class Database {
 	 * @return
 	 */
 	public boolean noFreeLocker() {
-		sql = "SELECT * FROM locker_set WHERE ISNULL(coordinator_id);";
+		String sql = "SELECT * FROM locker_set WHERE ISNULL(coordinator_id);";
 		ResultSet rs;
 		try {
+			Statement stmt = conn.createStatement();
 			rs = stmt.executeQuery(sql);
 			if( rs.next() ) {
 				rs.close();
@@ -329,9 +367,13 @@ public class Database {
 	 */
 	public void takeLocker(SocketAddress socketAddress, int coordinator_id) {
 		int port = ((InetSocketAddress)socketAddress).getPort();
-		sql = "UPDATE locker_set SET coordinator_id = " + coordinator_id + " WHERE port = " + port + ";";
+		String sql = "UPDATE locker_set SET coordinator_id = ? WHERE port = ?;";
 		try {
-			stmt.executeUpdate(sql);
+			PreparedStatement stmt = conn.prepareStatement( sql );
+			stmt.setInt( 1, coordinator_id );
+			stmt.setInt( 2, port );
+			stmt.executeUpdate( );
+			stmt.close( );
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -342,9 +384,11 @@ public class Database {
 	 * set coordinator_id to null for all lockers in database
 	 */
 	public void restartLocker() {
-		sql ="update locker_set set coordinator_id = null;";
+		String sql ="UPDATE locker_set SET coordinator_id = null;";
 		try {
+			Statement stmt = conn.createStatement( );
 			stmt.executeUpdate( sql );
+			stmt.close( );
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -364,35 +408,44 @@ public class Database {
 	 * @throws UnknownHostException
 	 */
 	public void insertBicycleTransection(int isRemoved, String bicycle_id, int user_id, int locker_id) {
-		String sql = null;
-		if( isRemoved == 0 ) {
-			//bike is taken
-			sql = "insert into transaction (bicycle_id, user_id, taken_locker, taken_timestamp)\r\n" + 
-					"values \r\n" + 
-					"(\"" + bicycle_id + "\", " + user_id +", " + locker_id + ", Now() );";
-		}else {
-			sql = "update transaction set returned_locker = " + locker_id + ", returned_timestamp = NOW()\r\n" + 
-					"where bicycle_id = \"" + bicycle_id + "\" AND ISNULL(returned_timestamp);";
-		}
 		try {
-			stmt.executeUpdate(sql);
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		
-		// insert new bike
-		sql = "select * from transaction where bicycle_id = \"" + bicycle_id + "\" ;";
-		ResultSet rs;
-		try {
+			if( isRemoved == 0 ) {
+				//bike is taken
+				String sql = "insert into transaction (bicycle_id, user_id, taken_locker, taken_timestamp)\r\n" + 
+						"values \r\n" + 
+						"(?, ?, ?, NOW() );";
+				PreparedStatement stmt = conn.prepareStatement( sql );
+				stmt.setString( 1, bicycle_id );
+				stmt.setInt( 2, user_id );
+				stmt.setInt( 3, locker_id );
+				stmt.executeQuery( );
+				stmt.close( );
+			}else {
+				String sql = "update transaction set returned_locker = ?, returned_timestamp = NOW()\r\n" + 
+						"where bicycle_id = ? AND ISNULL(returned_timestamp);";
+				PreparedStatement stmt = conn.prepareStatement( sql );
+				stmt.setInt( 1, locker_id );
+				stmt.setString( 2, bicycle_id );
+				stmt.executeQuery( );
+				stmt.close( );
+			}
 			
-			rs = stmt.executeQuery(sql);
+			// insert new bike
+			String sql = "select * from transaction where bicycle_id = ?;";
+			PreparedStatement stmt = conn.prepareStatement( sql );
+			stmt.setString( 1, bicycle_id );
+			ResultSet rs = stmt.executeQuery( );
 			if( !rs.next() ) {
-				sql = "insert into bicycle (id, current_locker) values (\"" + bicycle_id + "\", " + locker_id + ");";
-				stmt.executeUpdate(sql);
+				String innerSql = "insert into bicycle (id, current_locker) values (?,?);";
+				PreparedStatement innerStmt = conn.prepareStatement(innerSql);
+				innerStmt.setString(1, bicycle_id);
+				innerStmt.setInt(2, locker_id);
+				innerStmt.executeUpdate( );
+				innerStmt.close( );
 				System.out.println( "Info: New Bike " + bicycle_id + " is added!" );
 			}
 			rs.close();
-			
+			stmt.close( );
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -404,7 +457,6 @@ public class Database {
 	 */
 	public void closeDatabase() {
 		try {
-			stmt.close();
 			conn.close();
 		} catch (SQLException e) {
 			e.printStackTrace();

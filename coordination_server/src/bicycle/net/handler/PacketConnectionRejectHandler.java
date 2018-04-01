@@ -1,9 +1,9 @@
-package Handler;
+package bicycle.net.handler;
 
-import java.io.ByteArrayInputStream;
 import java.net.SocketAddress;
 
-import net_bicycles_coordination_server.Coordinator;
+import bicycle.Coordinator;
+import bicycle.io.BEInputStream;
 
 public class PacketConnectionRejectHandler implements PacketHandler {
 
@@ -14,7 +14,7 @@ public class PacketConnectionRejectHandler implements PacketHandler {
 	}
 	
 	@Override
-	public void handlePacket(ByteArrayInputStream bais, SocketAddress address, int pakcet_id) {
+	public void handlePacket( BEInputStream in, SocketAddress address, int packet_id) {
 		this.coordinator.removeWaitingLockers( address );
 	}
 

@@ -1,9 +1,9 @@
-package Packet;
+package bicycle.net.packet;
 
 public class PacketTransactionApproved extends Packet {
 
 	public PacketTransactionApproved() {
-		this.type = PacketType.Packet_Transaction_Approved;
+		this.type = PacketType.TRANSACTION_APPROVED;
 	}
 	
 }

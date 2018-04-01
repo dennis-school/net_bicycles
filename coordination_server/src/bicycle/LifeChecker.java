@@ -1,4 +1,4 @@
-package net_bicycles_coordination_server;
+package bicycle;
 
 import java.awt.event.ActionListener;
 import java.io.IOException;
@@ -7,7 +7,7 @@ import java.net.DatagramSocket;
 import java.net.SocketAddress;
 import javax.swing.Timer;
 
-import Packet.PacketLifeCheck;
+import bicycle.net.packet.PacketLifeCheck;
 
 /**
  * Periodically send signal packet to socket address.

@@ -1,4 +1,4 @@
-package net_bicycles_coordination_server;
+package bicycle;
 
 import java.awt.event.ActionListener;
 import java.io.IOException;
@@ -14,10 +14,9 @@ import java.util.HashMap;
 
 import javax.swing.Timer;
 
-import Database.Database;
-import Packet.PacketConnectionReject;
-import Packet.PacketReplaceConnectionRequest;
-import Packet.PacketRestart;
+import bicycle.database.Database;
+import bicycle.database.Database.Credentials;
+import bicycle.net.packet.PacketRestart;
 
 /**
  * Coordinator that handle message from Locker, modify Database, communicate with each other
@@ -57,20 +56,9 @@ public class Coordinator {
 	// database that store info
 	private Database database;
 	
-	public Coordinator() {
-		try {
-			this.socket = new DatagramSocket();
-			this.address = socket.getLocalSocketAddress();
-			this.port = socket.getLocalPort();
-		} catch (SocketException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	
-	public Coordinator(int id) {
+	public Coordinator(int id, Credentials dbCredentials) {
 		this.coordinator_id = id;
-		this.database = new Database();
+		this.database = new Database( dbCredentials );
 		this.listeningLockers = new ArrayList<SocketAddress>();
 		this.waitingLockers = new ArrayList<SocketAddress>();
 		
